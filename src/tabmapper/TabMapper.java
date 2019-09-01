@@ -1583,24 +1583,18 @@ public class TabMapper {
 //			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"}
 			
 			// Tab reconstruction project 
-////			new String[]{"ah_golden_hairs-II", "ah_golden_hairs-II"},
 //			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
 //			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
 //			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
 //			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
-//			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
+////			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
 //			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
 //			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
-////			new String[]{"o_that_we_woeful_wretches-II", "o_that_we_woeful_wretches-II"},
 //			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
 //			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
-////			new String[]{"rejoyce_unto_the_lord-II", "rejoyce_unto_the_lord-II"},
 //			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
-////			new String[]{"sith_death-II", "sith_death-II"},
 //			new String[]{"sith_death-NEW", "sith_death-NEW"},
-////			new String[]{"the_lord_is_only_my_support-II", "the_lord_is_only_my_support-II"},
 //			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
-////			new String[]{"the_man_is_blest-II", "the_man_is_blest-II"},
 //			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
 //			new String[]{"while_phoebus-II", "while_phoebus-II"}
 			
