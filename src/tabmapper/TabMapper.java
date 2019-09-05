@@ -132,9 +132,11 @@ public class TabMapper {
 	});
 
 
+	static List<Integer> models = new ArrayList<>();
+	static List<Integer> modelsBnp = new ArrayList<>();
 	public static void main(String[] args) {
 		String path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/";
-		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
+//		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
 
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
@@ -142,8 +144,10 @@ public class TabMapper {
 		List<String[]> pieces = getPieces();
 		List<String> skip = getPiecesToSkip();
 		
-		resultsOverAllPieces.append(	
-			"N" + "\t" + 
+		resultsOverAllPieces.append(
+			"piece " + "\t" + "\t" +
+			"N_model" + "\t" +
+			"N_intab" + "\t" + 
 			"M" + "\t" + 
 			"M_o" + "\t" + 
 			"M_r" + "\t" +
@@ -191,6 +195,8 @@ public class TabMapper {
 			Tablature tab = new Tablature(new File(path + "tab/" + tabName + ".tbp"), false);	
 			Transcription model = 
 				new Transcription(new File(path + "MIDI/" + modelName + ".mid"), null);
+			models.add(model.getNumberOfNotes());
+			modelsBnp.add(model.getBasicNoteProperties().length);
 			// If necessary: adapt maximum number of voices 
 			if (model.getNumberOfVoices() == 6) {
 				Transcription.setMaximumNumberOfVoices(6);
@@ -259,6 +265,9 @@ public class TabMapper {
 //			transDur.setColourIndices(mismatchInds);
 //			MEIExport.exportMEIFile(transDur, tab, mismatchInds, grandStaff, path + "mapped/" + tabName + "-dur");
 		}
+//		System.out.println(models);
+//		System.out.println(modelsBnp);
+
 		System.out.println(resultsOverAllPieces);
 		System.out.println(pieces.size() + " pieces (" + totalNumNotes + " notes) processed");		
 	}
@@ -582,6 +591,7 @@ public class TabMapper {
 //		System.out.println(Collections.frequency(voiceLabels, null));
 		
 		int numNotes = btp.length - Collections.frequency(voiceLabels, null);
+		int numNotesTrans = trans.getBasicNoteProperties().length;
 		
 		res.append("number of notes in tab:    " + numNotes + "\r\n");
 		res.append("number of mismatches:      " + numMismatches + ", of which " + "\r\n" + 
@@ -602,7 +612,10 @@ public class TabMapper {
 		double mo  = (numNotes - (Mo + Ma)) / (double) numNotes; 
 		double m = (numNotes - Ma) / (double) numNotes;
 		
+		String name = tab.getPieceName();
 		resultsOverAllPieces.append(
+			((name.length() < 13) ? name : name.substring(0, 12)) + "\t" +
+			numNotesTrans + "\t" + 	
 			numNotes + "\t" + 
 			numMismatches + "\t" + 
 			ornamentationInd.size() + "\t" + 
@@ -1583,37 +1596,37 @@ public class TabMapper {
 //			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"}
 			
 			// Tab reconstruction project 
-//			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
-//			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
-//			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
-//			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
-////			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
-//			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
-//			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
-//			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
-//			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
-//			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
-//			new String[]{"sith_death-NEW", "sith_death-NEW"},
-//			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
-//			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
-//			new String[]{"while_phoebus-II", "while_phoebus-II"}
+			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
+			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
+			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
+			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
+//			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
+			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
+			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
+			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
+			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
+			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
+			new String[]{"sith_death-NEW", "sith_death-NEW"},
+			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
+			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
+			new String[]{"while_phoebus-II", "while_phoebus-II"},
 			
 			// JosquIntab
 			// a. Mass sections
-			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
-			new String[]{"5266_15_cum_sancto_spiritu_desprez", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
-			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-1", "Jos0303c-Missa_De_beata_virgine-Credo-1-102"},
-			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-2", "Jos0303c-Missa_De_beata_virgine-Credo-103-159"},
-			new String[]{"5106_10_misa_de_faysan_regres_2_gloria", "Jos0801b-Missa_Faisant_regretz-Gloria-37-94"},
-			new String[]{"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-1", "Jos0801d-Missa_Faisant_regretz-Sanctus-1-22"},
-			new String[]{"5107_11_misa_de_faysan_regres_pleni", "Jos0801d-Missa_Faisant_regretz-Sanctus-23-67"},
-			new String[]{"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-2", "Jos0801d-Missa_Faisant_regretz-Sanctus-68-97"},
-			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-1", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-1-17"},
-			new String[]{"3584_001_pleni_missa_hercules_josquin", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-18-56"},
-			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-2", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-57-88"},
-			new String[]{"3585_002_benedictus_de_missa_pange_lingua_josquin", "Jos0403d-Missa_Pange_lingua-Sanctus-147-186"},
+//			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
+//			new String[]{"5266_15_cum_sancto_spiritu_desprez", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
+//			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-1", "Jos0303c-Missa_De_beata_virgine-Credo-1-102"},
+//			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-2", "Jos0303c-Missa_De_beata_virgine-Credo-103-159"},
+//			new String[]{"5106_10_misa_de_faysan_regres_2_gloria", "Jos0801b-Missa_Faisant_regretz-Gloria-37-94"},
+//			new String[]{"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-1", "Jos0801d-Missa_Faisant_regretz-Sanctus-1-22"},
+//			new String[]{"5107_11_misa_de_faysan_regres_pleni", "Jos0801d-Missa_Faisant_regretz-Sanctus-23-67"},
+//			new String[]{"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-2", "Jos0801d-Missa_Faisant_regretz-Sanctus-68-97"},
+//			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-1", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-1-17"},
+//			new String[]{"3584_001_pleni_missa_hercules_josquin", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-18-56"},
+//			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-2", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-57-88"},
+//			new String[]{"3585_002_benedictus_de_missa_pange_lingua_josquin", "Jos0403d-Missa_Pange_lingua-Sanctus-147-186"},
 //j-last	
-			new String[]{"5190_17_cum_spiritu_sanctu_from_missa_sine_nomine", "Jos1202b-Missa_Sine_nomine-Gloria-103-132"},
+//			new String[]{"5190_17_cum_spiritu_sanctu_from_missa_sine_nomine", "Jos1202b-Missa_Sine_nomine-Gloria-103-132"},
 			
 			// b. Motets
 //			new String[]{"5265_14_absalon_fili_me_desprez", "Jos1401-Absalon_fili_mi"},
