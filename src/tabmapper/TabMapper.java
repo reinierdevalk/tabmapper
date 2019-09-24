@@ -145,7 +145,7 @@ public class TabMapper {
 		List<String> skip = getPiecesToSkip();
 		
 		resultsOverAllPieces.append(
-			"piece " + "\t" + "\t" +
+			"piece " + "\t" +
 			"N_model" + "\t" +
 			"N_intab" + "\t" + 
 			"M" + "\t" + 
@@ -612,20 +612,29 @@ public class TabMapper {
 		double mo  = (numNotes - (Mo + Ma)) / (double) numNotes; 
 		double m = (numNotes - Ma) / (double) numNotes;
 		
+
+		boolean forLaTeX = false;
 		String name = tab.getPieceName();
+		String shortName = "";
+		for (String s : name.split("_")) {
+			shortName += s.substring(0, 1).toUpperCase();
+		}
+		name = shortName;		
+		String sep = forLaTeX ? " & " : "\t";
+		String lineBr = forLaTeX ? " \\" + "\\" + "\r\n" : "\r\n";
 		resultsOverAllPieces.append(
-			((name.length() < 13) ? name : name.substring(0, 12)) + "\t" +
-			numNotesTrans + "\t" + 	
-			numNotes + "\t" + 
-			numMismatches + "\t" + 
-			ornamentationInd.size() + "\t" + 
-			repetitionInd.size() + "\t" + 
-			fictaInd.size() + "\t" + 
-			otherInd.size() + "\t" +
-			ToolBox.formatDouble(morf, 0, 5) + "\t" +
-			ToolBox.formatDouble(mo, 0, 5) + "\t" +
-			ToolBox.formatDouble(m, 0, 5) + 
-			"\r\n"
+			((name.length() < 4) ? name : name.substring(0, 3)) + sep  +
+			numNotesTrans + sep + 	
+			numNotes + sep + 
+			numMismatches + sep + 
+			ornamentationInd.size() + sep + 
+			repetitionInd.size() + sep + 
+			fictaInd.size() + sep + 
+			otherInd.size() + sep +
+			ToolBox.formatDouble(morf, 0, 5) + sep +
+			ToolBox.formatDouble(mo, 0, 5) + 
+//			ToolBox.formatDouble(m, 0, 5) + 
+			lineBr
 		);
 
 		res.append("percentage of matches:     " + 
