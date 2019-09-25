@@ -32,7 +32,9 @@ public class TabMapper {
 	private static final int SMALLEST_DUR = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 	private static final int NUM_COURSES = 6;
 	private static enum Connection {LEFT, RIGHT};
-	private static StringBuffer resultsOverAllPieces = new StringBuffer();
+	private static StringBuffer resultsOverAllPieces;
+	private static List<String> shortNames;
+	private static double[][] resultsOverAllPiecesArr;
 	private static int totalNumNotes = 0;
 
 	private static final Map<Integer, Integer[] > KEY_SIGS;
@@ -144,6 +146,7 @@ public class TabMapper {
 		List<String[]> pieces = getPieces();
 		List<String> skip = getPiecesToSkip();
 		
+		resultsOverAllPieces = new StringBuffer();
 		resultsOverAllPieces.append(
 			"piece " + "\t" +
 			"N_model" + "\t" +
@@ -158,6 +161,7 @@ public class TabMapper {
 			"m_a" + 
 			"\r\n"
 		);
+		resultsOverAllPiecesArr = new double[pieces.size()][10];
 
 		if (args.length > 0) {
 			// Path
@@ -186,11 +190,14 @@ public class TabMapper {
 		}
 
 		// Map each piece in pieces
-		for (String[] piece : pieces) {
+		shortNames = new ArrayList<>();
+		for (int i = 0; i < pieces.size(); i++) {
+			String[] piece = pieces.get(i);
 			String tabName = piece[0];
 			String modelName = piece[1];
 			System.out.println("... mapping " + tabName + " ...");
-
+			shortNames.add(getShortName(tabName));
+			
 			// Make tab; make model transcription
 			Tablature tab = new Tablature(new File(path + "tab/" + tabName + ".tbp"), false);	
 			Transcription model = 
@@ -215,7 +222,7 @@ public class TabMapper {
 			totalNumNotes += btp.length;
 
 			// Map tab onto model
-			List<Object> mapping = map(model, tab, includeOrn, connection);
+			List<Object> mapping = map(model, tab, includeOrn, connection, i);
 			List<List<Double>> voiceLabels = (List<List<Double>>) mapping.get(0);
 			List<List<Integer>> mismatchInds = (List<List<Integer>>) mapping.get(1);
 			String mappingDetails = (String) mapping.get(2);
@@ -228,10 +235,10 @@ public class TabMapper {
 				Integer[][] btpCopy = 
 					new Integer[voiceLabels.size() - Collections.frequency(voiceLabels, null)][btp[0].length];
 				int ind = 0;
-				for (int i = 0; i < voiceLabels.size(); i++) {
-					if (voiceLabels.get(i) != null) {
-						voiceLabelsCopy.add(voiceLabels.get(i));
-						btpCopy[ind] = btp[i];
+				for (int j = 0; j < voiceLabels.size(); j++) {
+					if (voiceLabels.get(j) != null) {
+						voiceLabelsCopy.add(voiceLabels.get(j));
+						btpCopy[ind] = btp[j];
 						ind++;
 					}
 				}
@@ -269,7 +276,66 @@ public class TabMapper {
 //		System.out.println(modelsBnp);
 
 		System.out.println(resultsOverAllPieces);
+		String latexTable = createLaTeXTable(resultsOverAllPiecesArr, null,
+			Arrays.asList(new Integer[]{1, 2, 3, 4, 5, 6, 7}), shortNames, 0, 5);
+		System.out.println(latexTable);
 		System.out.println(pieces.size() + " pieces (" + totalNumNotes + " notes) processed");		
+	}
+
+
+	public static String getShortName(String name) {
+		String shortName = "";
+		for (String s : name.split("_")) {
+			shortName += s.substring(0, 1).toUpperCase();
+		}	
+		return (shortName.length() < 4) ? shortName : shortName.substring(0, 3);
+	}
+
+
+	public static String createLaTeXTable(double[][] data, String[][] dataStr, List<Integer> ints, 
+		List<String> names, int maxLenDouble, int totalNumChars) {
+		String table = "";
+		String lineBr = " \\" + "\\" + "\r\n";
+		
+		for (int i = 0; i < ((data != null) ? data.length : dataStr.length); i++) {
+			// double case
+			if (data != null) {
+				double[] row = data[i];
+				for (int j = 0; j < row.length; j++) {
+					if (j == 0) {
+						table += names.get(i) + " & ";
+					}
+					else {
+						if (ints.contains(j)) {
+							table += (int) row[j];
+						}
+						else {
+							table += ToolBox.formatDouble(row[j], maxLenDouble, totalNumChars);
+						}
+						if (j != row.length-1) {
+							table += " & ";
+						}
+						else {
+							table += lineBr;
+						}
+					}
+				}
+			}
+			// String case
+			if (dataStr != null) {
+				String[] row = dataStr[i];
+				for (int j = 0; j < row.length; j++) {
+					table += row[j];
+					if (j != row.length-1) {
+						table += " & ";
+					}
+					else {
+						table += lineBr;
+					}
+				}
+			}
+		}		
+		return table;
 	}
 
 
@@ -282,7 +348,7 @@ public class TabMapper {
 	 * @return A list of voice labels. 
 	 */
 	private static List<Object> map(Transcription trans, Tablature tab, boolean includeOrnamentation,
-		Connection connection) {
+		Connection connection, int pieceIndex) {
 //-*-		System.out.println(">>> TabMapper.map() called");
 		Integer[][] btp = tab.getBasicTabSymbolProperties();
 		int numVoices = trans.getNumberOfVoices();
@@ -611,31 +677,38 @@ public class TabMapper {
 		// m_o: repetitions and ficta do not count
 		double mo  = (numNotes - (Mo + Ma)) / (double) numNotes; 
 		double m = (numNotes - Ma) / (double) numNotes;
-		
 
-		boolean forLaTeX = false;
-		String name = tab.getPieceName();
-		String shortName = "";
-		for (String s : name.split("_")) {
-			shortName += s.substring(0, 1).toUpperCase();
-		}
-		name = shortName;		
-		String sep = forLaTeX ? " & " : "\t";
-		String lineBr = forLaTeX ? " \\" + "\\" + "\r\n" : "\r\n";
 		resultsOverAllPieces.append(
-			((name.length() < 4) ? name : name.substring(0, 3)) + sep  +
-			numNotesTrans + sep + 	
-			numNotes + sep + 
-			numMismatches + sep + 
-			ornamentationInd.size() + sep + 
-			repetitionInd.size() + sep + 
-			fictaInd.size() + sep + 
-			otherInd.size() + sep +
-			ToolBox.formatDouble(morf, 0, 5) + sep +
+//			((shortName.length() < 4) ? shortName : shortName.substring(0, 3)) + "\t"  +
+			shortNames.get(pieceIndex) + "\t" +
+			numNotesTrans + "\t" + 	
+			numNotes + "\t" + 
+			numMismatches + "\t" + 
+			ornamentationInd.size() + "\t" + 
+			repetitionInd.size() + "\t" + 
+			fictaInd.size() + "\t" + 
+			otherInd.size() + "\t" +
+			ToolBox.formatDouble(morf, 0, 5) + "\t" +
 			ToolBox.formatDouble(mo, 0, 5) + 
 //			ToolBox.formatDouble(m, 0, 5) + 
-			lineBr
+			"\r\n"
 		);
+		double[] curr = new double[]{
+			pieceIndex, 
+			numNotesTrans, 	
+			numNotes,
+			numMismatches,
+			ornamentationInd.size(), 
+			repetitionInd.size(), 
+			fictaInd.size(),
+			otherInd.size(),
+//			ToolBox.formatDouble(morf, 0, 5),
+			morf,
+//			ToolBox.formatDouble(mo, 0, 5)
+			mo
+//			ToolBox.formatDouble(m, 0, 5) + 
+		};
+		resultsOverAllPiecesArr[pieceIndex] = curr;
 
 		res.append("percentage of matches:     " + 
 			(1.0 - (numMismatches/(double) numNotes)) + " (only full matches)" + "\r\n");
