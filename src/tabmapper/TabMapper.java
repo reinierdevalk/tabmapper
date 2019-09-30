@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import analysis.Analyser;
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationSystem;
 import de.uos.fmt.musitech.data.score.NotationVoice;
@@ -34,7 +35,11 @@ public class TabMapper {
 	private static enum Connection {LEFT, RIGHT};
 	private static StringBuffer resultsOverAllPieces;
 	private static List<String> shortNames;
-	private static double[][] resultsOverAllPiecesArr;
+//	private static double[][] resultsOverAllPiecesArr;
+	private static String[][] resultsOverAllPiecesArrStr;
+	private static Integer[] intsToAvg;
+	private static Double[] doublesToAvg;
+
 	private static int totalNumNotes = 0;
 
 	private static final Map<Integer, Integer[] > KEY_SIGS;
@@ -161,7 +166,16 @@ public class TabMapper {
 			"m_a" + 
 			"\r\n"
 		);
-		resultsOverAllPiecesArr = new double[pieces.size()][10];
+//		resultsOverAllPiecesArr = new double[pieces.size()+1][10];
+		resultsOverAllPiecesArrStr = new String[pieces.size()+1][10];
+		
+		int numCols = 10;
+		List<Integer> doubleInds = 
+			IntStream.rangeClosed(numCols-2, numCols-1).boxed().collect(Collectors.toList());	
+		List<Integer> colsToSkip = Arrays.asList(new Integer[]{0});
+		List<Object> listsToAvg = Analyser.getListsToAvg(numCols, doubleInds, colsToSkip);
+		intsToAvg = (Integer[]) listsToAvg.get(0);
+		doublesToAvg = (Double[]) listsToAvg.get(1);
 
 		if (args.length > 0) {
 			// Path
@@ -276,8 +290,9 @@ public class TabMapper {
 //		System.out.println(modelsBnp);
 
 		System.out.println(resultsOverAllPieces);
-		String latexTable = ToolBox.createLaTeXTable(resultsOverAllPiecesArr, null,
-			Arrays.asList(new Integer[]{1, 2, 3, 4, 5, 6, 7}), shortNames, 0, 5);
+
+		String latexTable = ToolBox.createLaTeXTable(resultsOverAllPiecesArrStr, intsToAvg,
+			doublesToAvg, 0, 5, true);
 		System.out.println(latexTable);
 		System.out.println(pieces.size() + " pieces (" + totalNumNotes + " notes) processed");		
 	}
@@ -637,22 +652,42 @@ public class TabMapper {
 //			ToolBox.formatDouble(m, 0, 5) + 
 			"\r\n"
 		);
-		double[] curr = new double[]{
-			pieceIndex, 
-			numNotesTrans, 	
-			numNotes,
-			numMismatches,
-			ornamentationInd.size(), 
-			repetitionInd.size(), 
-			fictaInd.size(),
-			otherInd.size(),
-//			ToolBox.formatDouble(morf, 0, 5),
-			morf,
-//			ToolBox.formatDouble(mo, 0, 5)
-			mo
-//			ToolBox.formatDouble(m, 0, 5) + 
+		Integer[] currInts = new Integer[]{
+			null, 
+			numNotesTrans, numNotes, numMismatches, 
+			ornamentationInd.size(), repetitionInd.size(), fictaInd.size(), otherInd.size(),
+			null, null
 		};
-		resultsOverAllPiecesArr[pieceIndex] = curr;
+		Double[] currDoubles = new Double[]{
+			null, null, null, null, null, null, null, null,
+			morf, mo
+		};
+		resultsOverAllPiecesArrStr[pieceIndex][0] = shortNames.get(pieceIndex); 
+		for (int i = 0; i < currInts.length; i++) {
+			if (currInts[i] != null) {
+				resultsOverAllPiecesArrStr[pieceIndex][i] = String.valueOf(currInts[i]);
+				intsToAvg[i] += currInts[i]; 
+			}
+			else if (currDoubles[i] != null) {
+				resultsOverAllPiecesArrStr[pieceIndex][i] = ToolBox.formatDouble(currDoubles[i], 0, 5);
+				doublesToAvg[i] += currDoubles[i];
+			}
+		}
+//		resultsOverAllPiecesArr[pieceIndex] = new double[]{
+//			pieceIndex, 
+//			numNotesTrans, 	
+//			numNotes,
+//			numMismatches,
+//			ornamentationInd.size(), 
+//			repetitionInd.size(), 
+//			fictaInd.size(),
+//			otherInd.size(),
+////			ToolBox.formatDouble(morf, 0, 5),
+//			morf,
+////			ToolBox.formatDouble(mo, 0, 5)
+//			mo
+////			ToolBox.formatDouble(m, 0, 5) + 
+//		};
 
 		res.append("percentage of matches:     " + 
 			(1.0 - (numMismatches/(double) numNotes)) + " (only full matches)" + "\r\n");
