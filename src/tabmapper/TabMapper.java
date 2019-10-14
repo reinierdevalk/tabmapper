@@ -14,8 +14,6 @@ import analysis.Analyser;
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationSystem;
 import de.uos.fmt.musitech.data.score.NotationVoice;
-import de.uos.fmt.musitech.data.score.ScoreNote;
-import de.uos.fmt.musitech.data.score.ScorePitch;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
 import de.uos.fmt.musitech.utility.math.Rational;
@@ -144,34 +142,31 @@ public class TabMapper {
 	public static void main(String[] args) {
 		String path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
+		path = "C:/Users/Reinier/Desktop/IMS-tours/";
 
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
 		boolean grandStaff = false;
+		boolean addDuration = false;
 		List<String[]> pieces = getPieces();
 		List<String> skip = getPiecesToSkip();
 		
 		resultsOverAllPieces = new StringBuffer();
-		resultsOverAllPieces.append(
-			"piece " + "\t" +
-			"N_model" + "\t" +
-			"N_intab" + "\t" + 
-			"M" + "\t" + 
-			"M_o" + "\t" + 
-			"M_r" + "\t" +
-			"M_f" + "\t" +
-			"M_a" + "\t" +
-			"m_orfa" + "\t" +
-			"m_oa" + "\t" +
-			"m_a" + 
-			"\r\n"
-		);
-//		resultsOverAllPiecesArr = new double[pieces.size()+1][10];
-		resultsOverAllPiecesArrStr = new String[pieces.size()+1][10];
+		List<String> cols = Arrays.asList(new String[]{
+			"piece", "N_model", "N_intab", 
+			"M", "M_o", "M_r", "M_f", "M_a",
+			"m", "m_oa", "m_a"
+		});
+		for (int i = 0; i < cols.size(); i++) {
+			String s = cols.get(i);
+			resultsOverAllPieces = (i < cols.size()-1) ? resultsOverAllPieces.append(s + "\t") :
+				resultsOverAllPieces.append(s + "\r\n");
+		}
+		resultsOverAllPiecesArrStr = new String[pieces.size()+1][cols.size()];
 		
-		int numCols = 10;
+		int numCols = cols.size();
 		List<Integer> doubleInds = 
-			IntStream.rangeClosed(numCols-2, numCols-1).boxed().collect(Collectors.toList());	
+			IntStream.rangeClosed(numCols-3, numCols-1).boxed().collect(Collectors.toList());
 		List<Integer> colsToSkip = Arrays.asList(new Integer[]{0});
 		List<Object> listsToAvg = Analyser.getListsToAvg(numCols, doubleInds, colsToSkip);
 		intsToAvg = (Integer[]) listsToAvg.get(0);
@@ -192,14 +187,24 @@ public class TabMapper {
 				pieces.add(new String[]{split[0].strip(), split[1].strip()});
 			}
 			// Ornamentation
-			if (args.length == 3) {
-				String opt = args[2]; 
-				if (!opt.equals("-n")) {
-					System.out.println("Unknown optional argument: " + opt);
-				}
-				else {
-					includeOrn = false;
-				}
+//-**-			if (args.length == 3) {
+//-**-				String opt = args[2]; 
+//-**-				if (!opt.equals("-n")) {
+//-**-					System.out.println("Unknown optional argument: " + opt);
+//-**-				}
+//-**-				else {
+//-**-					includeOrn = false;
+//-**-				}
+//-**-			}
+			// Options: add ornamentation, add duration, grand staff (each Y/N)
+			if (args.length > 2) {
+				String opt = args[3];
+				String orn = opt.substring(0, 1);
+				String dur = opt.substring(1, 2);
+				String gs = opt.substring(2, 3);
+				includeOrn = (orn.contains("y") || orn.contains("Y")) ? true : false;
+				addDuration = (dur.contains("y") || dur.contains("Y")) ? true : false;
+				grandStaff = (gs.contains("y") || gs.contains("Y")) ? true : false;
 			}
 		}
 
@@ -209,9 +214,12 @@ public class TabMapper {
 			String[] piece = pieces.get(i);
 			String tabName = piece[0];
 			String modelName = piece[1];
-			System.out.println("... mapping " + tabName + " ...");
+			System.out.println("\r\n... mapping " + tabName + " ...");
 			shortNames.add(ToolBox.getShortName(tabName));
-			
+	//		if (i == 0) {
+	//			shortNames.set(0, "OSP"); //-**-
+	//		}
+
 			// Make tab; make model transcription
 			Tablature tab = new Tablature(new File(path + "tab/" + tabName + ".tbp"), false);	
 			Transcription model = 
@@ -227,7 +235,7 @@ public class TabMapper {
 			}
 
 			Integer[][] btp = tab.getBasicTabSymbolProperties();
-			Integer[][] bnp = model.getBasicNoteProperties();			
+			Integer[][] bnp = model.getBasicNoteProperties();
 			System.out.println("    tab has " + (btp[btp.length-1][Tablature.CHORD_SEQ_NUM] + 1) +
 				" chords and " + btp.length + " notes");
 			System.out.println("    MIDI has " + (bnp[bnp.length-1][Transcription.CHORD_SEQ_NUM] + 1) 
@@ -264,37 +272,48 @@ public class TabMapper {
 			// a. As .txt and .csv, containing the mapping statistics
 			ToolBox.storeTextFile(mappingDetails, new File(path + "mapped/" + tabName + "-mapping_details.txt"));
 			ToolBox.storeTextFile(mappingDetailsCSV, new File(path + "mapped/" + tabName + "-mapping_details.csv"));
-			// b. As MIDI (used to create a GT transcription for training a model)
+			// b. As MIDI (used to create a GT transcription for training a model) and MEI
+			// (used to visualise the mismatches)
 			Piece p = Transcription.createPiece(
 				btp, null, voiceLabels, null, model.getNumberOfVoices(), 
 				model.getPiece().getMetricalTimeLine(), model.getPiece().getHarmonyTrack());
-			File f = new File(path + "mapped/" + tabName + ".mid");
 			List<Integer> instruments = Arrays.asList(new Integer[]{MIDIExport.GUITAR});
-			MIDIExport.exportMidiFile(p, instruments, f.getAbsolutePath());
-			// c. As MEI (used to visualise the mismatches)
-			Transcription trans = new Transcription(f, null);
-			trans.setColourIndices(mismatchInds);
-			MEIExport.exportMEIFile(trans, tab, mismatchInds, grandStaff, path + "mapped/" + tabName);
-			// Add full durations to piece
-			Rational maxDur = tab.getDiminutions().get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
-			p = Transcription.completeDurations(p, maxDur);
-			// d. As MIDI (with full durations)
-//			File fDur = new File(path + "mapped/ "+ tabName + "-dur.mid");
-//			MIDIExport.exportMidiFile(p, instruments, fDur.getAbsolutePath());
-			// e. As MEI (with full durations)
-//			Transcription transDur = new Transcription(fDur, null);
-//			transDur.setColourIndices(mismatchInds);
-//			MEIExport.exportMEIFile(transDur, tab, mismatchInds, grandStaff, path + "mapped/" + tabName + "-dur");
+			// Without full durations
+			if (!addDuration) {
+				// MIDI 
+				File f = new File(path + "mapped/" + tabName + ".mid");
+				MIDIExport.exportMidiFile(p, instruments, f.getAbsolutePath());
+				// MEI 
+				Transcription trans = new Transcription(f, null);
+				trans.setColourIndices(mismatchInds);
+				MEIExport.exportMEIFile(trans, tab, mismatchInds, grandStaff, path + "mapped/" + tabName);
+			}
+			// With full durations 
+			if (addDuration) {
+				Rational maxDur = tab.getDiminutions().get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
+				p = Transcription.completeDurations(p, maxDur);
+				// MIDI
+				File fDur = new File(path + "mapped/"+ tabName + "-dur.mid");
+				MIDIExport.exportMidiFile(p, instruments, fDur.getAbsolutePath());
+				// MEI
+				Transcription transDur = new Transcription(fDur, null);
+				transDur.setColourIndices(mismatchInds);
+				MEIExport.exportMEIFile(transDur, tab, mismatchInds, grandStaff, path + "mapped/" + tabName + "-dur");
+			}
 		}
 //		System.out.println(models);
 //		System.out.println(modelsBnp);
 
+		System.out.println(
+			pieces.size() + (pieces.size() == 1 ? " piece (" : " pieces (") + 
+			totalNumNotes + " notes) processed" + "\r\n");
+		
 		System.out.println(resultsOverAllPieces);
 
 		String latexTable = ToolBox.createLaTeXTable(resultsOverAllPiecesArrStr, intsToAvg,
 			doublesToAvg, 0, 5, true);
 		System.out.println(latexTable);
-		System.out.println(pieces.size() + " pieces (" + totalNumNotes + " notes) processed");		
+
 	}
 
 
@@ -648,19 +667,19 @@ public class TabMapper {
 			fictaInd.size() + "\t" + 
 			otherInd.size() + "\t" +
 			ToolBox.formatDouble(morf, 0, 5) + "\t" +
-			ToolBox.formatDouble(mo, 0, 5) + 
-//			ToolBox.formatDouble(m, 0, 5) + 
+			ToolBox.formatDouble(mo, 0, 5) + "\t" +
+			ToolBox.formatDouble(m, 0, 5) + 
 			"\r\n"
 		);
 		Integer[] currInts = new Integer[]{
 			null, 
 			numNotesTrans, numNotes, numMismatches, 
 			ornamentationInd.size(), repetitionInd.size(), fictaInd.size(), otherInd.size(),
-			null, null
+			null, null, null
 		};
 		Double[] currDoubles = new Double[]{
 			null, null, null, null, null, null, null, null,
-			morf, mo
+			morf, mo, m
 		};
 		resultsOverAllPiecesArrStr[pieceIndex][0] = shortNames.get(pieceIndex); 
 		for (int i = 0; i < currInts.length; i++) {
@@ -1656,21 +1675,24 @@ public class TabMapper {
 //			new String[] {"3618_041_benedictus_from_missa_de_l_homme_arme_morales_T", "Morales-Lhomme_Arme-a4-5-Benedictus"},
 //			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"}
 			
+			// Tours
+			new String[]{"1132_13_o_sio_potessi_donna_berchem_solo", "Berchem_-_O_s'io_potessi_donna"}
+			
 			// Tab reconstruction project 
-			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
-			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
-			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
-			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
-//			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
-			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
-			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
-			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
-			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
-			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
-			new String[]{"sith_death-NEW", "sith_death-NEW"},
-			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
-			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
-			new String[]{"while_phoebus-II", "while_phoebus-II"},
+//			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
+//			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
+//			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
+//			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
+////			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
+//			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
+//			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
+//			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
+//			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
+//			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
+//			new String[]{"sith_death-NEW", "sith_death-NEW"},
+//			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
+//			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
+//			new String[]{"while_phoebus-II", "while_phoebus-II"},
 			
 			// JosquIntab
 			// a. Mass sections
