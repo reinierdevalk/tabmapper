@@ -142,7 +142,7 @@ public class TabMapper {
 	public static void main(String[] args) {
 		String path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
-		path = "C:/Users/Reinier/Desktop/IMS-tours/";
+		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
 
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
