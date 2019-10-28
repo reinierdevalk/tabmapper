@@ -143,6 +143,7 @@ public class TabMapper {
 		String path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
 		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
+		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
 
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
@@ -1676,7 +1677,7 @@ public class TabMapper {
 //			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"}
 			
 			// Tours
-			new String[]{"1132_13_o_sio_potessi_donna_berchem_solo", "Berchem_-_O_s'io_potessi_donna"}
+//			new String[]{"1132_13_o_sio_potessi_donna_berchem_solo", "Berchem_-_O_s'io_potessi_donna"}
 			
 			// Tab reconstruction project 
 //			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
@@ -1764,7 +1765,7 @@ public class TabMapper {
 //			new String[]{"4481_49_ach_unfal_wes_zeigst_du_mich", "Jos2829-Qui_belles_amours"},
 //			new String[] {"4406_51_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
 //			new String[] {"4467_37_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
-//			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},
+			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},
 //j-once	
 //			new String[] {"1030_coment_peult_avoir_joye", "Jos2807-Comment_peult_avoir_joye"},
 //			new String[] {"1275_13_faulte_d_argent", "Jos2907-Faulte_dargent"},
