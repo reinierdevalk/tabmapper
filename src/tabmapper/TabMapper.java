@@ -144,14 +144,15 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
 		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
 		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
+		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/test/";
 
-		boolean includeOrn = true;
+		boolean includeOrn = false;
 		Connection connection = Connection.RIGHT;
 		boolean grandStaff = false;
 		boolean addDuration = false;
 		List<String[]> pieces = getPieces();
 		List<String> skip = getPiecesToSkip();
-		
+
 		resultsOverAllPieces = new StringBuffer();
 		List<String> cols = Arrays.asList(new String[]{
 			"piece", "N_model", "N_intab", 
@@ -287,7 +288,11 @@ public class TabMapper {
 				// MEI 
 				Transcription trans = new Transcription(f, null);
 				trans.setColourIndices(mismatchInds);
-				MEIExport.exportMEIFile(trans, tab, mismatchInds, grandStaff, path + "mapped/" + tabName);
+				List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
+				if (!skip.contains(tabName)) {
+					MEIExport.exportMEIFile(trans, /*tab,*/ btp, mi, trans.getKeyInfo(), 
+						mismatchInds, grandStaff, path + "mapped/" + tabName);
+				}
 			}
 			// With full durations 
 			if (addDuration) {
@@ -299,7 +304,11 @@ public class TabMapper {
 				// MEI
 				Transcription transDur = new Transcription(fDur, null);
 				transDur.setColourIndices(mismatchInds);
-				MEIExport.exportMEIFile(transDur, tab, mismatchInds, grandStaff, path + "mapped/" + tabName + "-dur");
+				List<Integer[]> mi = (tab == null) ? transDur.getMeterInfo() : tab.getMeterInfo();
+				if (!skip.contains(tabName)) {
+					MEIExport.exportMEIFile(transDur, /*tab,*/ btp, mi, transDur.getKeyInfo(), 
+						mismatchInds, grandStaff, path + "mapped/" + tabName + "-dur");
+				}
 			}
 		}
 //		System.out.println(models);
@@ -1761,26 +1770,26 @@ public class TabMapper {
 //			new String[]{"5255_04_stabat_mater_dolorosa_desprez-2", "Jos2509-Stabat_mater__Comme_femme-89-180"},
 
 			// c. Chansons
-//			new String[]{"4400_45_ach_unfall_was", "Jos2829-Qui_belles_amours"},
-//			new String[]{"4481_49_ach_unfal_wes_zeigst_du_mich", "Jos2829-Qui_belles_amours"},
-//			new String[] {"4406_51_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
-//			new String[] {"4467_37_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
+			new String[]{"4400_45_ach_unfall_was", "Jos2829-Qui_belles_amours"},
+			new String[]{"4481_49_ach_unfal_wes_zeigst_du_mich", "Jos2829-Qui_belles_amours"},
+			new String[] {"4406_51_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
+			new String[] {"4467_37_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
 			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},
 //j-once	
-//			new String[] {"1030_coment_peult_avoir_joye", "Jos2807-Comment_peult_avoir_joye"},
-//			new String[] {"1275_13_faulte_d_argent", "Jos2907-Faulte_dargent"},
-//			new String[] {"3638_061_lauda_sion_gombert_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
-//			new String[] {"5148_51_respice_in_me_deus._F#_lute_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
+			new String[] {"1030_coment_peult_avoir_joye", "Jos2807-Comment_peult_avoir_joye"},
+			new String[] {"1275_13_faulte_d_argent", "Jos2907-Faulte_dargent"},
+			new String[] {"3638_061_lauda_sion_gombert_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
+			new String[] {"5148_51_respice_in_me_deus._F#_lute_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
 //j-once	
-//			new String[] {"5260_09_date_siceram_morentibus_sermisy", "Jos2911-Je_ne_me_puis_tenir_daimer"},
-//			new String[] {"4438_07_la_plus_des_plus", "Jos2722-La_plus_des_plus"},
+			new String[] {"5260_09_date_siceram_morentibus_sermisy", "Jos2911-Je_ne_me_puis_tenir_daimer"},
+			new String[] {"4438_07_la_plus_des_plus", "Jos2722-La_plus_des_plus"},
 ////			new String[] {"4443_12_la_bernardina", "Jos2721-La_Bernardina"},
 ////			new String[] {"1033_la_bernadina_solo_orig", "Jos2721-La_Bernardina"},
 //j-once	
-//			new String[] {"5191_18_mille_regres", "Jos2825-Mille_regretz"},
-//			new String[] {"4482_50_mille_regrets_P", "Jos2825-Mille_regretz"},
-//			new String[] {"4469_39_plus_nulz_regrets_P", "Jos2828-Plus_nulz_regrets"},
-//			new String[] {"922_milano_098_que_voulez_vous_dire_de_moi", "Jos2832-Si_jay_perdu"},
+			new String[] {"5191_18_mille_regres", "Jos2825-Mille_regretz"},
+			new String[] {"4482_50_mille_regrets_P", "Jos2825-Mille_regretz"},
+			new String[] {"4469_39_plus_nulz_regrets_P", "Jos2828-Plus_nulz_regrets"},
+			new String[] {"922_milano_098_que_voulez_vous_dire_de_moi", "Jos2832-Si_jay_perdu"},
 		});
 		return pieces;
 	}
@@ -1788,8 +1797,8 @@ public class TabMapper {
 
 	private static List<String> getPiecesToSkip() {
 		List<String> skip = Arrays.asList(new String[]{
-			// orn-LEFT
-			"3585_002_benedictus_de_missa_pange_lingua_josquin", // problem with unison in b. 35
+			// orn-RIGHT
+//			"3585_002_benedictus_de_missa_pange_lingua_josquin", // problem with unison in b. 35
 			"4965_01b_per_illud_ave_josquin", // problem with getMetricPosition
 			"5254_03_benedicta_es_coelorum_desprez-1", // problem with getMetricPosition
 			"5702_benedicta-1", // problem with getMetricPosition
