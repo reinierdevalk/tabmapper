@@ -144,7 +144,7 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
 		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
 		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
-		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/test/";
+		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
 
 		boolean includeOrn = false;
 		Connection connection = Connection.RIGHT;
@@ -1680,10 +1680,9 @@ public class TabMapper {
 	// C O N V E N I E N C E  M E T H O D S
 	private static List<String[]> getPieces() {
 		List<String[]> pieces = Arrays.asList(new String[][]{
-			// Three test pieces
+			// Two Morales test pieces from https://www.uma.es/victoria/morales.html
 //			new String[] {"3610_033_inter_natos_mulierum_morales_T-rev", "Morales-Inter_Natos_Mulierum-1-54"},
 //			new String[] {"3618_041_benedictus_from_missa_de_l_homme_arme_morales_T", "Morales-Lhomme_Arme-a4-5-Benedictus"},
-//			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"}
 			
 			// Tours
 //			new String[]{"1132_13_o_sio_potessi_donna_berchem_solo", "Berchem_-_O_s'io_potessi_donna"}
