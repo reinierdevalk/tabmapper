@@ -10,11 +10,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import analysis.Analyser;
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationSystem;
 import de.uos.fmt.musitech.data.score.NotationVoice;
-import de.uos.fmt.musitech.data.score.ScoreNote;
-import de.uos.fmt.musitech.data.score.ScorePitch;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
 import de.uos.fmt.musitech.utility.math.Rational;
@@ -32,7 +31,13 @@ public class TabMapper {
 	private static final int SMALLEST_DUR = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 	private static final int NUM_COURSES = 6;
 	private static enum Connection {LEFT, RIGHT};
-	private static StringBuffer resultsOverAllPieces = new StringBuffer();
+	private static StringBuffer resultsOverAllPieces;
+	private static List<String> shortNames;
+//	private static double[][] resultsOverAllPiecesArr;
+	private static String[][] resultsOverAllPiecesArrStr;
+	private static Integer[] intsToAvg;
+	private static Double[] doublesToAvg;
+
 	private static int totalNumNotes = 0;
 
 	private static final Map<Integer, Integer[] > KEY_SIGS;
@@ -137,27 +142,37 @@ public class TabMapper {
 	public static void main(String[] args) {
 		String path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
+		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
+		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
+		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
 
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
 		boolean grandStaff = false;
+		boolean addDuration = false;
 		List<String[]> pieces = getPieces();
 		List<String> skip = getPiecesToSkip();
+
+		resultsOverAllPieces = new StringBuffer();
+		List<String> cols = Arrays.asList(new String[]{
+			"piece", "N_model", "N_intab", 
+			"M", "M_o", "M_r", "M_f", "M_a",
+			"m", "m_oa", "m_a"
+		});
+		for (int i = 0; i < cols.size(); i++) {
+			String s = cols.get(i);
+			resultsOverAllPieces = (i < cols.size()-1) ? resultsOverAllPieces.append(s + "\t") :
+				resultsOverAllPieces.append(s + "\r\n");
+		}
+		resultsOverAllPiecesArrStr = new String[pieces.size()+1][cols.size()];
 		
-		resultsOverAllPieces.append(
-			"piece " + "\t" + "\t" +
-			"N_model" + "\t" +
-			"N_intab" + "\t" + 
-			"M" + "\t" + 
-			"M_o" + "\t" + 
-			"M_r" + "\t" +
-			"M_f" + "\t" +
-			"M_a" + "\t" +
-			"m_orfa" + "\t" +
-			"m_oa" + "\t" +
-			"m_a" + 
-			"\r\n"
-		);
+		int numCols = cols.size();
+		List<Integer> doubleInds = 
+			IntStream.rangeClosed(numCols-3, numCols-1).boxed().collect(Collectors.toList());
+		List<Integer> colsToSkip = Arrays.asList(new Integer[]{0});
+		List<Object> listsToAvg = Analyser.getListsToAvg(numCols, doubleInds, colsToSkip);
+		intsToAvg = (Integer[]) listsToAvg.get(0);
+		doublesToAvg = (Double[]) listsToAvg.get(1);
 
 		if (args.length > 0) {
 			// Path
@@ -174,22 +189,38 @@ public class TabMapper {
 				pieces.add(new String[]{split[0].strip(), split[1].strip()});
 			}
 			// Ornamentation
-			if (args.length == 3) {
-				String opt = args[2]; 
-				if (!opt.equals("-n")) {
-					System.out.println("Unknown optional argument: " + opt);
-				}
-				else {
-					includeOrn = false;
-				}
+//-**-			if (args.length == 3) {
+//-**-				String opt = args[2]; 
+//-**-				if (!opt.equals("-n")) {
+//-**-					System.out.println("Unknown optional argument: " + opt);
+//-**-				}
+//-**-				else {
+//-**-					includeOrn = false;
+//-**-				}
+//-**-			}
+			// Options: add ornamentation, add duration, grand staff (each Y/N)
+			if (args.length > 2) {
+				String opt = args[3];
+				String orn = opt.substring(0, 1);
+				String dur = opt.substring(1, 2);
+				String gs = opt.substring(2, 3);
+				includeOrn = (orn.contains("y") || orn.contains("Y")) ? true : false;
+				addDuration = (dur.contains("y") || dur.contains("Y")) ? true : false;
+				grandStaff = (gs.contains("y") || gs.contains("Y")) ? true : false;
 			}
 		}
 
 		// Map each piece in pieces
-		for (String[] piece : pieces) {
+		shortNames = new ArrayList<>();
+		for (int i = 0; i < pieces.size(); i++) {
+			String[] piece = pieces.get(i);
 			String tabName = piece[0];
 			String modelName = piece[1];
-			System.out.println("... mapping " + tabName + " ...");
+			System.out.println("\r\n... mapping " + tabName + " ...");
+			shortNames.add(ToolBox.getShortName(tabName));
+	//		if (i == 0) {
+	//			shortNames.set(0, "OSP"); //-**-
+	//		}
 
 			// Make tab; make model transcription
 			Tablature tab = new Tablature(new File(path + "tab/" + tabName + ".tbp"), false);	
@@ -206,7 +237,7 @@ public class TabMapper {
 			}
 
 			Integer[][] btp = tab.getBasicTabSymbolProperties();
-			Integer[][] bnp = model.getBasicNoteProperties();			
+			Integer[][] bnp = model.getBasicNoteProperties();
 			System.out.println("    tab has " + (btp[btp.length-1][Tablature.CHORD_SEQ_NUM] + 1) +
 				" chords and " + btp.length + " notes");
 			System.out.println("    MIDI has " + (bnp[bnp.length-1][Transcription.CHORD_SEQ_NUM] + 1) 
@@ -215,7 +246,7 @@ public class TabMapper {
 			totalNumNotes += btp.length;
 
 			// Map tab onto model
-			List<Object> mapping = map(model, tab, includeOrn, connection);
+			List<Object> mapping = map(model, tab, includeOrn, connection, i);
 			List<List<Double>> voiceLabels = (List<List<Double>>) mapping.get(0);
 			List<List<Integer>> mismatchInds = (List<List<Integer>>) mapping.get(1);
 			String mappingDetails = (String) mapping.get(2);
@@ -228,10 +259,10 @@ public class TabMapper {
 				Integer[][] btpCopy = 
 					new Integer[voiceLabels.size() - Collections.frequency(voiceLabels, null)][btp[0].length];
 				int ind = 0;
-				for (int i = 0; i < voiceLabels.size(); i++) {
-					if (voiceLabels.get(i) != null) {
-						voiceLabelsCopy.add(voiceLabels.get(i));
-						btpCopy[ind] = btp[i];
+				for (int j = 0; j < voiceLabels.size(); j++) {
+					if (voiceLabels.get(j) != null) {
+						voiceLabelsCopy.add(voiceLabels.get(j));
+						btpCopy[ind] = btp[j];
 						ind++;
 					}
 				}
@@ -243,33 +274,56 @@ public class TabMapper {
 			// a. As .txt and .csv, containing the mapping statistics
 			ToolBox.storeTextFile(mappingDetails, new File(path + "mapped/" + tabName + "-mapping_details.txt"));
 			ToolBox.storeTextFile(mappingDetailsCSV, new File(path + "mapped/" + tabName + "-mapping_details.csv"));
-			// b. As MIDI (used to create a GT transcription for training a model)
+			// b. As MIDI (used to create a GT transcription for training a model) and MEI
+			// (used to visualise the mismatches)
 			Piece p = Transcription.createPiece(
 				btp, null, voiceLabels, null, model.getNumberOfVoices(), 
 				model.getPiece().getMetricalTimeLine(), model.getPiece().getHarmonyTrack());
-			File f = new File(path + "mapped/" + tabName + ".mid");
 			List<Integer> instruments = Arrays.asList(new Integer[]{MIDIExport.GUITAR});
-			MIDIExport.exportMidiFile(p, instruments, f.getAbsolutePath());
-			// c. As MEI (used to visualise the mismatches)
-			Transcription trans = new Transcription(f, null);
-			trans.setColourIndices(mismatchInds);
-			MEIExport.exportMEIFile(trans, tab, mismatchInds, grandStaff, path + "mapped/" + tabName);
-			// Add full durations to piece
-			Rational maxDur = tab.getDiminutions().get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
-			p = Transcription.completeDurations(p, maxDur);
-			// d. As MIDI (with full durations)
-//			File fDur = new File(path + "mapped/ "+ tabName + "-dur.mid");
-//			MIDIExport.exportMidiFile(p, instruments, fDur.getAbsolutePath());
-			// e. As MEI (with full durations)
-//			Transcription transDur = new Transcription(fDur, null);
-//			transDur.setColourIndices(mismatchInds);
-//			MEIExport.exportMEIFile(transDur, tab, mismatchInds, grandStaff, path + "mapped/" + tabName + "-dur");
+			// Without full durations
+			if (!addDuration) {
+				// MIDI 
+				File f = new File(path + "mapped/" + tabName + ".mid");
+				MIDIExport.exportMidiFile(p, instruments, f.getAbsolutePath());
+				// MEI 
+				Transcription trans = new Transcription(f, null);
+				trans.setColourIndices(mismatchInds);
+				List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
+				if (!skip.contains(tabName)) {
+					MEIExport.exportMEIFile(trans, /*tab,*/ btp, mi, trans.getKeyInfo(), 
+						mismatchInds, grandStaff, path + "mapped/" + tabName);
+				}
+			}
+			// With full durations 
+			if (addDuration) {
+				Rational maxDur = tab.getDiminutions().get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
+				p = Transcription.completeDurations(p, maxDur);
+				// MIDI
+				File fDur = new File(path + "mapped/"+ tabName + "-dur.mid");
+				MIDIExport.exportMidiFile(p, instruments, fDur.getAbsolutePath());
+				// MEI
+				Transcription transDur = new Transcription(fDur, null);
+				transDur.setColourIndices(mismatchInds);
+				List<Integer[]> mi = (tab == null) ? transDur.getMeterInfo() : tab.getMeterInfo();
+				if (!skip.contains(tabName)) {
+					MEIExport.exportMEIFile(transDur, /*tab,*/ btp, mi, transDur.getKeyInfo(), 
+						mismatchInds, grandStaff, path + "mapped/" + tabName + "-dur");
+				}
+			}
 		}
 //		System.out.println(models);
 //		System.out.println(modelsBnp);
 
+		System.out.println(
+			pieces.size() + (pieces.size() == 1 ? " piece (" : " pieces (") + 
+			totalNumNotes + " notes) processed" + "\r\n");
+		
 		System.out.println(resultsOverAllPieces);
-		System.out.println(pieces.size() + " pieces (" + totalNumNotes + " notes) processed");		
+
+		String latexTable = ToolBox.createLaTeXTable(resultsOverAllPiecesArrStr, intsToAvg,
+			doublesToAvg, 0, 5, true);
+		System.out.println(latexTable);
+
 	}
 
 
@@ -282,7 +336,7 @@ public class TabMapper {
 	 * @return A list of voice labels. 
 	 */
 	private static List<Object> map(Transcription trans, Tablature tab, boolean includeOrnamentation,
-		Connection connection) {
+		Connection connection, int pieceIndex) {
 //-*-		System.out.println(">>> TabMapper.map() called");
 		Integer[][] btp = tab.getBasicTabSymbolProperties();
 		int numVoices = trans.getNumberOfVoices();
@@ -336,6 +390,7 @@ public class TabMapper {
 		Rational onsetLastOrnChord = null;
 		// For each chord
 		for (int i = 0; i < grid.length; i++) {
+//			System.out.println("chord = " + i);
 			Integer[] currGrid = grid[i];
 			Integer[] currMask = mask[i];
 
@@ -611,10 +666,10 @@ public class TabMapper {
 		// m_o: repetitions and ficta do not count
 		double mo  = (numNotes - (Mo + Ma)) / (double) numNotes; 
 		double m = (numNotes - Ma) / (double) numNotes;
-		
-		String name = tab.getPieceName();
+
 		resultsOverAllPieces.append(
-			((name.length() < 13) ? name : name.substring(0, 12)) + "\t" +
+//			((shortName.length() < 4) ? shortName : shortName.substring(0, 3)) + "\t"  +
+			shortNames.get(pieceIndex) + "\t" +
 			numNotesTrans + "\t" + 	
 			numNotes + "\t" + 
 			numMismatches + "\t" + 
@@ -627,6 +682,42 @@ public class TabMapper {
 			ToolBox.formatDouble(m, 0, 5) + 
 			"\r\n"
 		);
+		Integer[] currInts = new Integer[]{
+			null, 
+			numNotesTrans, numNotes, numMismatches, 
+			ornamentationInd.size(), repetitionInd.size(), fictaInd.size(), otherInd.size(),
+			null, null, null
+		};
+		Double[] currDoubles = new Double[]{
+			null, null, null, null, null, null, null, null,
+			morf, mo, m
+		};
+		resultsOverAllPiecesArrStr[pieceIndex][0] = shortNames.get(pieceIndex); 
+		for (int i = 0; i < currInts.length; i++) {
+			if (currInts[i] != null) {
+				resultsOverAllPiecesArrStr[pieceIndex][i] = String.valueOf(currInts[i]);
+				intsToAvg[i] += currInts[i]; 
+			}
+			else if (currDoubles[i] != null) {
+				resultsOverAllPiecesArrStr[pieceIndex][i] = ToolBox.formatDouble(currDoubles[i], 0, 5);
+				doublesToAvg[i] += currDoubles[i];
+			}
+		}
+//		resultsOverAllPiecesArr[pieceIndex] = new double[]{
+//			pieceIndex, 
+//			numNotesTrans, 	
+//			numNotes,
+//			numMismatches,
+//			ornamentationInd.size(), 
+//			repetitionInd.size(), 
+//			fictaInd.size(),
+//			otherInd.size(),
+////			ToolBox.formatDouble(morf, 0, 5),
+//			morf,
+////			ToolBox.formatDouble(mo, 0, 5)
+//			mo
+////			ToolBox.formatDouble(m, 0, 5) + 
+//		};
 
 		res.append("percentage of matches:     " + 
 			(1.0 - (numMismatches/(double) numNotes)) + " (only full matches)" + "\r\n");
@@ -950,7 +1041,7 @@ public class TabMapper {
 		List<Integer> extendedSNUVoices, List<Integer> mappedVoices, List<List<Double>> 
 		voiceLabelsCurrChord, List<Integer[]> keyInfo, Rational currOnset, Transcription trans,
 		List<Integer> prevPitches, List<List<Double>> prevVoiceLabels){
-		
+
 		int numVoices = trans.getNumberOfVoices();
 		List<Integer> allVoices = 
 			IntStream.rangeClosed(0, numVoices-1).boxed().collect(Collectors.toList());
@@ -1023,9 +1114,9 @@ public class TabMapper {
 //-*-				System.out.println("yes");
 				if (prevPitches != null && prevPitches.size() == pitchesTab.size()) {
 					isConsecutiveTupletChord = true;
-//-*-					System.out.println("hier!");
+					System.out.println("isConsecutiveTupletChord in " + trans.getPieceName());
 				}
-				//System.exit(0);
+
 				for (int j = 0; j < mappedVoices.size(); j++) {
 					int mappedVoice = mappedVoices.get(j);
 					if (!activeAvailableVoices.contains(mappedVoice)) {
@@ -1129,26 +1220,36 @@ public class TabMapper {
 //-*-					System.out.println("voiceLabelsCurrChord    " + voiceLabelsCurrChord + " (removal of non-mapped SNU)");
 				}
 			}
-			
 			// If the chord is a consecutive tuplet chord: adapt cheapestMapping
 			if (isConsecutiveTupletChord) {
+//-**-			System.out.println("pitchesTab = " + pitchesTab);				
+//-**-				System.out.println("pitchesNotInMIDI = " + pitchesNotInMIDI);
+//-**-				System.out.println("prevPitches = " + prevPitches);
+//-**-				System.out.println("prevVoiceLabels = " + prevVoiceLabels);
 				cheapestMapping.clear();
 				for (Integer p : pitchesNotInMIDI) {
 					if (p != null) {
+						int voice = 
+							DataConverter.convertIntoListOfVoices(
+							prevVoiceLabels.get(prevPitches.indexOf(p))).get(0);
+						// Calculate cost by comparing with the pitch that goes with the 
+						// available voice in the MIDI
+						int pToCompareWith = -1;
+						for (Integer[] in : lastPitchInAvailableVoices) {
+							if (in[0] == voice) {
+								pToCompareWith = in[1];
+								break;
+							}
+						}
 						cheapestMapping.add(new Integer[]{
-							DataConverter.convertIntoListOfVoices(prevVoiceLabels.get(
-							prevPitches.indexOf(p))).get(0), 
-							p, -1});
+							voice, p, 
+//							-1, // value used for ISMIR 2019 paper 
+							Math.abs(p-pToCompareWith)}); 
 					}
 				}
 			}
 			cheapestMappingTotal.addAll(cheapestMapping);
-//-*-			String cm = "cheapestMapping         ";
-//-*-			for (Integer[] in : cheapestMapping) {
-//-*-				cm += Arrays.toString(in) + " ";
-//-*-			}
-//-*-			System.out.println(cm);
-			
+
 			// 6. Add pitch indices to correct list
 			for (Integer[] in : cheapestMapping) {
 				int pitch = in[1];
@@ -1410,8 +1511,8 @@ public class TabMapper {
      *         as element 1: the last pitch in that voice
 	 */
 	// TESTED
-	static List<Integer[]> getLastPitchInVoices(List<Integer> availableVoices, 
-		int numVoices, Rational onset, Transcription trans) {
+	static List<Integer[]> getLastPitchInVoices(List<Integer> availableVoices, int numVoices,
+		Rational onset, Transcription trans) {
 		List<Integer[]> lastPitchInAvailableVoices = new ArrayList<>();
 		NotationSystem ns = trans.getPiece().getScore();
 		for (int j = numVoices - 1; j >= 0; j--) {
@@ -1421,6 +1522,7 @@ public class TabMapper {
 				for (NotationChord nc : nv) {
 					Note prev = Transcription.getAdjacentNoteInVoice(nv, nc.get(0), true);
 					if (nc.size() == 2) {
+						System.out.println("NotationChord has size 2");
 						System.out.println(nc);
 						System.exit(0);
 					}
@@ -1590,26 +1692,28 @@ public class TabMapper {
 	// C O N V E N I E N C E  M E T H O D S
 	private static List<String[]> getPieces() {
 		List<String[]> pieces = Arrays.asList(new String[][]{
-			// Three test pieces
+			// Two Morales test pieces from https://www.uma.es/victoria/morales.html
 //			new String[] {"3610_033_inter_natos_mulierum_morales_T-rev", "Morales-Inter_Natos_Mulierum-1-54"},
 //			new String[] {"3618_041_benedictus_from_missa_de_l_homme_arme_morales_T", "Morales-Lhomme_Arme-a4-5-Benedictus"},
-//			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"}
+			
+			// Tours
+//			new String[]{"1132_13_o_sio_potessi_donna_berchem_solo", "Berchem_-_O_s'io_potessi_donna"}
 			
 			// Tab reconstruction project 
-			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
-			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
-			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
-			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
-//			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
-			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
-			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
-			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
-			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
-			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
-			new String[]{"sith_death-NEW", "sith_death-NEW"},
-			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
-			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
-			new String[]{"while_phoebus-II", "while_phoebus-II"},
+//			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
+//			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
+//			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
+//			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
+////			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
+//			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
+//			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
+//			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
+//			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
+//			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
+//			new String[]{"sith_death-NEW", "sith_death-NEW"},
+//			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
+//			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
+//			new String[]{"while_phoebus-II", "while_phoebus-II"},
 			
 			// JosquIntab
 			// a. Mass sections
@@ -1624,7 +1728,7 @@ public class TabMapper {
 //			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-1", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-1-17"},
 //			new String[]{"3584_001_pleni_missa_hercules_josquin", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-18-56"},
 //			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-2", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-57-88"},
-//			new String[]{"3585_002_benedictus_de_missa_pange_lingua_josquin", "Jos0403d-Missa_Pange_lingua-Sanctus-147-186"},
+//			new String[]{"3585_002_benedictus_de_missa_pange_lingua_josquin", "Jos0403d-Missa_Pange_lingua-Sanctus-139-186"},
 //j-last	
 //			new String[]{"5190_17_cum_spiritu_sanctu_from_missa_sine_nomine", "Jos1202b-Missa_Sine_nomine-Gloria-103-132"},
 			
@@ -1640,7 +1744,7 @@ public class TabMapper {
 //			new String[]{"5254_03_benedicta_es_coelorum_desprez-3", "Jos2313-Benedicta_es_celorum-136-176"},
 			// TODO 0, 1, 32, 33, 36, 38
 //j-mul		
-//			new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
+			new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
 			// TODO 91, 93, 222, 226, 231, 234
 //j-mul	
 //			new String[]{"5702_benedicta-2", "Jos2313-Benedicta_es_celorum-108-135"},
@@ -1704,12 +1808,12 @@ public class TabMapper {
 
 	private static List<String> getPiecesToSkip() {
 		List<String> skip = Arrays.asList(new String[]{
-			// orn-LEFT
-			"3585_002_benedictus_de_missa_pange_lingua_josquin", // problem with unison in b. 35
-			"4965_01b_per_illud_ave_josquin", // problem with getMetricPosition
-			"5254_03_benedicta_es_coelorum_desprez-1", // problem with getMetricPosition
-			"5702_benedicta-1", // problem with getMetricPosition
-			"5252_01_pater_noster_desprez-2", // problem with getMetricPosition
+			// orn-RIGHT
+//			"3585_002_benedictus_de_missa_pange_lingua_josquin", // problem with unison in b. 35
+///			"4965_01b_per_illud_ave_josquin", // problem with getMetricPosition
+///			"5254_03_benedicta_es_coelorum_desprez-1", // problem with getMetricPosition
+///			"5702_benedicta-1", // problem with getMetricPosition
+///			"5252_01_pater_noster_desprez-2", // problem with getMetricPosition
 //			// unorn-LEFT
 //			"4471_40_cum_sancto_spiritu",
 //			"5266_15_cum_sancto_spiritu_desprez",
