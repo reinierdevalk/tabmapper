@@ -146,7 +146,7 @@ public class TabMapper {
 		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
 		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
 
-		boolean includeOrn = false;
+		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
 		boolean grandStaff = false;
 		boolean addDuration = false;
@@ -390,6 +390,7 @@ public class TabMapper {
 		Rational onsetLastOrnChord = null;
 		// For each chord
 		for (int i = 0; i < grid.length; i++) {
+//			System.out.println("chord = " + i);
 			Integer[] currGrid = grid[i];
 			Integer[] currMask = mask[i];
 
@@ -1040,7 +1041,7 @@ public class TabMapper {
 		List<Integer> extendedSNUVoices, List<Integer> mappedVoices, List<List<Double>> 
 		voiceLabelsCurrChord, List<Integer[]> keyInfo, Rational currOnset, Transcription trans,
 		List<Integer> prevPitches, List<List<Double>> prevVoiceLabels){
-		
+
 		int numVoices = trans.getNumberOfVoices();
 		List<Integer> allVoices = 
 			IntStream.rangeClosed(0, numVoices-1).boxed().collect(Collectors.toList());
@@ -1113,9 +1114,9 @@ public class TabMapper {
 //-*-				System.out.println("yes");
 				if (prevPitches != null && prevPitches.size() == pitchesTab.size()) {
 					isConsecutiveTupletChord = true;
-//-*-					System.out.println("hier!");
+					System.out.println("isConsecutiveTupletChord in " + trans.getPieceName());
 				}
-				//System.exit(0);
+
 				for (int j = 0; j < mappedVoices.size(); j++) {
 					int mappedVoice = mappedVoices.get(j);
 					if (!activeAvailableVoices.contains(mappedVoice)) {
@@ -1219,26 +1220,36 @@ public class TabMapper {
 //-*-					System.out.println("voiceLabelsCurrChord    " + voiceLabelsCurrChord + " (removal of non-mapped SNU)");
 				}
 			}
-			
 			// If the chord is a consecutive tuplet chord: adapt cheapestMapping
 			if (isConsecutiveTupletChord) {
+//-**-			System.out.println("pitchesTab = " + pitchesTab);				
+//-**-				System.out.println("pitchesNotInMIDI = " + pitchesNotInMIDI);
+//-**-				System.out.println("prevPitches = " + prevPitches);
+//-**-				System.out.println("prevVoiceLabels = " + prevVoiceLabels);
 				cheapestMapping.clear();
 				for (Integer p : pitchesNotInMIDI) {
 					if (p != null) {
+						int voice = 
+							DataConverter.convertIntoListOfVoices(
+							prevVoiceLabels.get(prevPitches.indexOf(p))).get(0);
+						// Calculate cost by comparing with the pitch that goes with the 
+						// available voice in the MIDI
+						int pToCompareWith = -1;
+						for (Integer[] in : lastPitchInAvailableVoices) {
+							if (in[0] == voice) {
+								pToCompareWith = in[1];
+								break;
+							}
+						}
 						cheapestMapping.add(new Integer[]{
-							DataConverter.convertIntoListOfVoices(prevVoiceLabels.get(
-							prevPitches.indexOf(p))).get(0), 
-							p, -1});
+							voice, p, 
+//							-1, // value used for ISMIR 2019 paper 
+							Math.abs(p-pToCompareWith)}); 
 					}
 				}
 			}
 			cheapestMappingTotal.addAll(cheapestMapping);
-//-*-			String cm = "cheapestMapping         ";
-//-*-			for (Integer[] in : cheapestMapping) {
-//-*-				cm += Arrays.toString(in) + " ";
-//-*-			}
-//-*-			System.out.println(cm);
-			
+
 			// 6. Add pitch indices to correct list
 			for (Integer[] in : cheapestMapping) {
 				int pitch = in[1];
@@ -1500,8 +1511,8 @@ public class TabMapper {
      *         as element 1: the last pitch in that voice
 	 */
 	// TESTED
-	static List<Integer[]> getLastPitchInVoices(List<Integer> availableVoices, 
-		int numVoices, Rational onset, Transcription trans) {
+	static List<Integer[]> getLastPitchInVoices(List<Integer> availableVoices, int numVoices,
+		Rational onset, Transcription trans) {
 		List<Integer[]> lastPitchInAvailableVoices = new ArrayList<>();
 		NotationSystem ns = trans.getPiece().getScore();
 		for (int j = numVoices - 1; j >= 0; j--) {
@@ -1511,6 +1522,7 @@ public class TabMapper {
 				for (NotationChord nc : nv) {
 					Note prev = Transcription.getAdjacentNoteInVoice(nv, nc.get(0), true);
 					if (nc.size() == 2) {
+						System.out.println("NotationChord has size 2");
 						System.out.println(nc);
 						System.exit(0);
 					}
@@ -1716,7 +1728,7 @@ public class TabMapper {
 //			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-1", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-1-17"},
 //			new String[]{"3584_001_pleni_missa_hercules_josquin", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-18-56"},
 //			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-2", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-57-88"},
-//			new String[]{"3585_002_benedictus_de_missa_pange_lingua_josquin", "Jos0403d-Missa_Pange_lingua-Sanctus-147-186"},
+//			new String[]{"3585_002_benedictus_de_missa_pange_lingua_josquin", "Jos0403d-Missa_Pange_lingua-Sanctus-139-186"},
 //j-last	
 //			new String[]{"5190_17_cum_spiritu_sanctu_from_missa_sine_nomine", "Jos1202b-Missa_Sine_nomine-Gloria-103-132"},
 			
@@ -1732,7 +1744,7 @@ public class TabMapper {
 //			new String[]{"5254_03_benedicta_es_coelorum_desprez-3", "Jos2313-Benedicta_es_celorum-136-176"},
 			// TODO 0, 1, 32, 33, 36, 38
 //j-mul		
-//			new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
+			new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
 			// TODO 91, 93, 222, 226, 231, 234
 //j-mul	
 //			new String[]{"5702_benedicta-2", "Jos2313-Benedicta_es_celorum-108-135"},
@@ -1769,26 +1781,26 @@ public class TabMapper {
 //			new String[]{"5255_04_stabat_mater_dolorosa_desprez-2", "Jos2509-Stabat_mater__Comme_femme-89-180"},
 
 			// c. Chansons
-			new String[]{"4400_45_ach_unfall_was", "Jos2829-Qui_belles_amours"},
-			new String[]{"4481_49_ach_unfal_wes_zeigst_du_mich", "Jos2829-Qui_belles_amours"},
-			new String[] {"4406_51_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
-			new String[] {"4467_37_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
-			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},
+//			new String[]{"4400_45_ach_unfall_was", "Jos2829-Qui_belles_amours"},
+//			new String[]{"4481_49_ach_unfal_wes_zeigst_du_mich", "Jos2829-Qui_belles_amours"},
+//			new String[] {"4406_51_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
+//			new String[] {"4467_37_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
+//			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},
 //j-once	
-			new String[] {"1030_coment_peult_avoir_joye", "Jos2807-Comment_peult_avoir_joye"},
-			new String[] {"1275_13_faulte_d_argent", "Jos2907-Faulte_dargent"},
-			new String[] {"3638_061_lauda_sion_gombert_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
-			new String[] {"5148_51_respice_in_me_deus._F#_lute_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
+//			new String[] {"1030_coment_peult_avoir_joye", "Jos2807-Comment_peult_avoir_joye"},
+//			new String[] {"1275_13_faulte_d_argent", "Jos2907-Faulte_dargent"},
+//			new String[] {"3638_061_lauda_sion_gombert_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
+//			new String[] {"5148_51_respice_in_me_deus._F#_lute_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
 //j-once	
-			new String[] {"5260_09_date_siceram_morentibus_sermisy", "Jos2911-Je_ne_me_puis_tenir_daimer"},
-			new String[] {"4438_07_la_plus_des_plus", "Jos2722-La_plus_des_plus"},
+//			new String[] {"5260_09_date_siceram_morentibus_sermisy", "Jos2911-Je_ne_me_puis_tenir_daimer"},
+//			new String[] {"4438_07_la_plus_des_plus", "Jos2722-La_plus_des_plus"},
 ////			new String[] {"4443_12_la_bernardina", "Jos2721-La_Bernardina"},
 ////			new String[] {"1033_la_bernadina_solo_orig", "Jos2721-La_Bernardina"},
 //j-once	
-			new String[] {"5191_18_mille_regres", "Jos2825-Mille_regretz"},
-			new String[] {"4482_50_mille_regrets_P", "Jos2825-Mille_regretz"},
-			new String[] {"4469_39_plus_nulz_regrets_P", "Jos2828-Plus_nulz_regrets"},
-			new String[] {"922_milano_098_que_voulez_vous_dire_de_moi", "Jos2832-Si_jay_perdu"},
+//			new String[] {"5191_18_mille_regres", "Jos2825-Mille_regretz"},
+//			new String[] {"4482_50_mille_regrets_P", "Jos2825-Mille_regretz"},
+//			new String[] {"4469_39_plus_nulz_regrets_P", "Jos2828-Plus_nulz_regrets"},
+//			new String[] {"922_milano_098_que_voulez_vous_dire_de_moi", "Jos2832-Si_jay_perdu"},
 		});
 		return pieces;
 	}
@@ -1798,10 +1810,10 @@ public class TabMapper {
 		List<String> skip = Arrays.asList(new String[]{
 			// orn-RIGHT
 //			"3585_002_benedictus_de_missa_pange_lingua_josquin", // problem with unison in b. 35
-			"4965_01b_per_illud_ave_josquin", // problem with getMetricPosition
-			"5254_03_benedicta_es_coelorum_desprez-1", // problem with getMetricPosition
-			"5702_benedicta-1", // problem with getMetricPosition
-			"5252_01_pater_noster_desprez-2", // problem with getMetricPosition
+///			"4965_01b_per_illud_ave_josquin", // problem with getMetricPosition
+///			"5254_03_benedicta_es_coelorum_desprez-1", // problem with getMetricPosition
+///			"5702_benedicta-1", // problem with getMetricPosition
+///			"5252_01_pater_noster_desprez-2", // problem with getMetricPosition
 //			// unorn-LEFT
 //			"4471_40_cum_sancto_spiritu",
 //			"5266_15_cum_sancto_spiritu_desprez",
