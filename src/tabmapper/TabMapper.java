@@ -358,13 +358,13 @@ public class TabMapper {
 		// 3/2, 2/2: beat level is H; two levels below is E
 		int ornThreshold = -1;
 		if (meterInfo.get(0)[1] == 2) {
-			ornThreshold = Transcription.EIGHTH.indexOf(1.0) + 1;
+			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // *3 trp dur
 		}
 		else if (meterInfo.get(0)[1] == 1) {
-			ornThreshold = Transcription.QUARTER.indexOf(1.0) + 1;
+			ornThreshold = (Transcription.QUARTER.indexOf(1.0) + 1)*3; // *3 trp dur
 		}
 		else if (meterInfo.get(0)[0] == 4 && meterInfo.get(0)[1] == 4) { // TODO
-			ornThreshold = Transcription.EIGHTH.indexOf(1.0) + 1;
+			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // * 3 trp dur
 		}
 
 		List<Integer[][]> gridAndMask = makeGridAndMask(trans, tab);
@@ -406,7 +406,7 @@ public class TabMapper {
 //					SMALLEST_DUR), meterInfo)[1];
 				String bar = 
 					ToolBox.getMetricPositionAsString(Tablature.getMetricPosition(
-					new Rational(currMask[1], SMALLEST_DUR), meterInfo));
+					new Rational(currMask[ONSET_IND], SMALLEST_DUR), meterInfo));
 
 				// Get pitches, arranged per voice (low-high), from GT
 				List<Integer> pitchesGT = 
@@ -507,7 +507,7 @@ public class TabMapper {
 
 						res.append("no match for pitches " + pitchesNotInMIDIOriginal + " at indices " + 
 							indPitchesNotInMIDI + " (bar " + currMask[0] + "; onset " + 
-							Tablature.getMetricPosition(new Rational(currMask[1], SMALLEST_DUR), 
+							Tablature.getMetricPosition(new Rational(currMask[ONSET_IND], SMALLEST_DUR), 
 							meterInfo)[1] + ")" + "\r\n");
 						res.append("pitches in tab chord : " + pitchesTab + "\r\n");
 						res.append("cheapest mapping (total cost " + 
@@ -604,7 +604,7 @@ public class TabMapper {
 //									ornChMask[0] + " " + Tablature.getMetricPosition(
 //									new Rational(ornChMask[1], SMALLEST_DUR), meterInfo)[1] + "," +	
 									ToolBox.getMetricPositionAsString(Tablature.getMetricPosition(
-									new Rational(ornChMask[1], SMALLEST_DUR), meterInfo)) + "," +
+									new Rational(ornChMask[ONSET_IND], SMALLEST_DUR), meterInfo)) + "," +
 									closestVoice + "," + "n/a" + "," + "ornamentation");
 							}
 						}
@@ -753,7 +753,7 @@ public class TabMapper {
 		Integer[][] bnp = trans.getBasicNoteProperties();
 		Integer[][] btp = tab.getBasicTabSymbolProperties();
 		
-		// Determine smallest duration in MIDI (currently simply set to 1/32)
+		// Determine smallest duration in MIDI (currently simply set to Tablature.SMALLEST_RHYTHMIC_VALUE)
 		int smallestDur = -1;
 		Rational smallestDurInMIDI = Rational.ONE;
 		for (Integer[] b : bnp) {
@@ -804,8 +804,8 @@ public class TabMapper {
 			}
 		}
 					
-		// Make mask. Contains, per chord: bar; onset; pitches (low to high); durations (i.e., minimum 
-		// duration); indices
+		// Make mask. Contains, per chord: bar, onset, pitches (low to high), durations (i.e., minimum 
+		// duration), indices
 		// Initialised with all values set to null
 		Integer[][] mask = new Integer[allOnsetTimes.size()][(ONSET_IND + 1) + 3*NUM_COURSES];
 		
@@ -1176,6 +1176,7 @@ public class TabMapper {
 			int cheapest = Integer.MAX_VALUE;
 			List<Integer[]> cheapestMapping = null;
 			List<List<Integer[]>> comb = ToolBox.getCombinations(lastPitchInAvailableVoices.size());
+			
 			for (int k = 0; k < subsetsOfPitchesNotInMIDI.size(); k++) {
 				List<Integer[]> currCheapestMapping = 
 					getCheapestMapping(subsetsOfPitchesNotInMIDI.get(k), comb, lastPitchInAvailableVoices);
@@ -1744,7 +1745,7 @@ public class TabMapper {
 //			new String[]{"5254_03_benedicta_es_coelorum_desprez-3", "Jos2313-Benedicta_es_celorum-136-176"},
 			// TODO 0, 1, 32, 33, 36, 38
 //j-mul		
-			new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
+//			new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
 			// TODO 91, 93, 222, 226, 231, 234
 //j-mul	
 //			new String[]{"5702_benedicta-2", "Jos2313-Benedicta_es_celorum-108-135"},
@@ -1800,7 +1801,7 @@ public class TabMapper {
 //			new String[] {"5191_18_mille_regres", "Jos2825-Mille_regretz"},
 //			new String[] {"4482_50_mille_regrets_P", "Jos2825-Mille_regretz"},
 //			new String[] {"4469_39_plus_nulz_regrets_P", "Jos2828-Plus_nulz_regrets"},
-//			new String[] {"922_milano_098_que_voulez_vous_dire_de_moi", "Jos2832-Si_jay_perdu"},
+			new String[] {"922_milano_098_que_voulez_vous_dire_de_moi", "Jos2832-Si_jay_perdu"},
 		});
 		return pieces;
 	}
