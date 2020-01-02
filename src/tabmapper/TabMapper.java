@@ -140,10 +140,10 @@ public class TabMapper {
 	static List<Integer> models = new ArrayList<>();
 	static List<Integer> modelsBnp = new ArrayList<>();
 	public static void main(String[] args) {
-		String path = "C:/Users/Reinier/Desktop/tab_reconstr-hector/";
+		String path = "F:/research/projects/byrd/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
-		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
-		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
+//		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
+//		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
 		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
 
 		boolean includeOrn = true;
@@ -1753,7 +1753,7 @@ public class TabMapper {
 //			new String[]{"3591_008_fecit_potentiam_josquin", "Jos2004-Magnificat_Quarti_toni-Verse_6_Fecit_potentiam"},
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-1", "Jos1704-In_exitu_Israel_de_Egypto-1-143"},
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-2", "Jos1704-In_exitu_Israel_de_Egypto-144-280"},
-//			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
+			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
 //			new String[]{"5256_05_inviolata_integra_desprez-1", "Jos2404-Inviolata_integra_et_casta_es-1-63"},
 //			new String[]{"5256_05_inviolata_integra_desprez-2", "Jos2404-Inviolata_integra_et_casta_es-64-105"},
 //			new String[]{"5256_05_inviolata_integra_desprez-3", "Jos2404-Inviolata_integra_et_casta_es-106-144"},
@@ -1801,7 +1801,7 @@ public class TabMapper {
 //			new String[] {"5191_18_mille_regres", "Jos2825-Mille_regretz"},
 //			new String[] {"4482_50_mille_regrets_P", "Jos2825-Mille_regretz"},
 //			new String[] {"4469_39_plus_nulz_regrets_P", "Jos2828-Plus_nulz_regrets"},
-			new String[] {"922_milano_098_que_voulez_vous_dire_de_moi", "Jos2832-Si_jay_perdu"},
+//			new String[] {"922_milano_098_que_voulez_vous_dire_de_moi", "Jos2832-Si_jay_perdu"},
 		});
 		return pieces;
 	}
