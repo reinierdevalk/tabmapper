@@ -144,12 +144,12 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
 //		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
-		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
+//		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
 
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
 		boolean grandStaff = false;
-		boolean addDuration = false;
+		boolean addDuration = true;
 		List<String[]> pieces = getPieces();
 		List<String> skip = getPiecesToSkip();
 
@@ -1701,20 +1701,20 @@ public class TabMapper {
 //			new String[]{"1132_13_o_sio_potessi_donna_berchem_solo", "Berchem_-_O_s'io_potessi_donna"}
 			
 			// Tab reconstruction project 
-//			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
-//			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
-//			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
-//			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
+			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
+			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
+			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
+			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
 ////			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
-//			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
-//			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
-//			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
-//			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
-//			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
-//			new String[]{"sith_death-NEW", "sith_death-NEW"},
-//			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
-//			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
-//			new String[]{"while_phoebus-II", "while_phoebus-II"},
+			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
+			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
+			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
+			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
+			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
+			new String[]{"sith_death-NEW", "sith_death-NEW"},
+			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
+			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
+			new String[]{"while_phoebus-II", "while_phoebus-II"},
 			
 			// JosquIntab
 			// a. Mass sections
@@ -1753,7 +1753,7 @@ public class TabMapper {
 //			new String[]{"3591_008_fecit_potentiam_josquin", "Jos2004-Magnificat_Quarti_toni-Verse_6_Fecit_potentiam"},
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-1", "Jos1704-In_exitu_Israel_de_Egypto-1-143"},
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-2", "Jos1704-In_exitu_Israel_de_Egypto-144-280"},
-			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
+//			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
 //			new String[]{"5256_05_inviolata_integra_desprez-1", "Jos2404-Inviolata_integra_et_casta_es-1-63"},
 //			new String[]{"5256_05_inviolata_integra_desprez-2", "Jos2404-Inviolata_integra_et_casta_es-64-105"},
 //			new String[]{"5256_05_inviolata_integra_desprez-3", "Jos2404-Inviolata_integra_et_casta_es-106-144"},
