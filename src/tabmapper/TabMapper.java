@@ -149,7 +149,7 @@ public class TabMapper {
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
 		boolean grandStaff = false;
-		boolean addDuration = true;
+		boolean addDuration = false;
 		List<String[]> pieces = getPieces();
 		List<String> skip = getPiecesToSkip();
 
