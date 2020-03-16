@@ -28,7 +28,7 @@ public class TabMapper {
 
 	private static final int BAR_IND = 0;
 	private static final int ONSET_IND = 1;
-	private static final int SMALLEST_DUR = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
+	public static final int SMALLEST_DUR = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
 	private static final int NUM_COURSES = 6;
 	private static enum Connection {LEFT, RIGHT};
 	private static StringBuffer resultsOverAllPieces;
@@ -144,7 +144,7 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
 //		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
-//		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
+		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
 
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
@@ -323,7 +323,40 @@ public class TabMapper {
 		String latexTable = ToolBox.createLaTeXTable(resultsOverAllPiecesArrStr, intsToAvg,
 			doublesToAvg, 0, 5, true);
 		System.out.println(latexTable);
+	}
 
+
+	/**
+	 * Rounds the given fraction by incrementally decreasing and increasing its numerator
+	 * (-1, +1, -2, +2, -3, +3, ...) until the denominator of the resulting reduced fraction 
+	 * equals 1.
+	 * 
+	 * @param r
+	 * @return
+	 */
+	// TESTED
+	static Rational roundFraction(Rational r) {
+		int numer = r.getNumer();
+		int denom = r.getDenom(); 
+		int diff = 1;
+		while (r.getDenom() != 1) {
+			System.out.println(diff);
+			// Try subtraction 
+			r = new Rational((numer-diff), denom);
+			r.reduce();
+			if (r.getDenom() == 1) {
+				break;
+			}
+			// Reset and try addition
+			r = new Rational(numer, denom);
+			r = new Rational((numer+diff), denom);
+			r.reduce();
+			if (r.getDenom() == 1) {
+				break;
+			}
+			diff++;
+		}
+		return r; 
 	}
 
 
@@ -370,6 +403,13 @@ public class TabMapper {
 		List<Integer[][]> gridAndMask = makeGridAndMask(trans, tab);
 		Integer[][] grid = gridAndMask.get(0);
 		Integer[][] mask = gridAndMask.get(1);
+		for (Integer[] in : grid) {
+			System.out.println(Arrays.toString(in));
+		}
+		System.out.println("-*-*-*-*-*-*-");
+		for (Integer[] in : mask) {
+			System.out.println(Arrays.toString(in));
+		}
 		List<List<Double>> voiceLabels = new ArrayList<List<Double>>();
 		StringBuffer res = new StringBuffer();
 		StringBuffer resCsv = new StringBuffer();
@@ -745,6 +785,11 @@ public class TabMapper {
 	/**
 	 * Returns grid and mask.
 	 * 
+	 * The grid contains, per chord: bar, onset, pitches per voice (starting at lowest voice), 
+	 * durations per voice (starting at lowest voice).
+	 * The mask contains, per chord: bar, onset, pitches (low to high), durations (i.e., minimum 
+	 * duration), indices
+	 * 
 	 * @param trans
 	 * @param tab
 	 * @return
@@ -768,6 +813,16 @@ public class TabMapper {
 
 		// Get union of sets of onset times in tab and trans
 		List<Rational> allOnsetTimes = new ArrayList<>(trans.getAllOnsetTimes());
+//		System.out.println("allOnsetTimes trans");
+//		for (Rational r : allOnsetTimes) {
+//			System.out.println(r);
+//		}
+//		System.out.println("allOnsetTimes tab");
+//		for (Rational r : tab.getAllOnsetTimes()) {
+//			r.reduce();
+//			System.out.println(r);
+//		}
+//		System.exit(0);
 		for (Rational r : tab.getAllOnsetTimes()) {
 			if (!allOnsetTimes.contains(r)) {
 				allOnsetTimes.add(r);
@@ -775,9 +830,7 @@ public class TabMapper {
 		}
 		Collections.sort(allOnsetTimes);
 
-		// Make grid. Contains, per chord: bar, onset, pitches per voice (starting at lowest voice), 
-		// durations per voice (starting at lowest voice).
-		// Initialised with all values set to null  
+		// Make grid; initialise with all values set to null  
 		NotationSystem score = trans.getPiece().getScore();
 		int numVoices = score.size();
 		Integer[][] grid = new Integer[allOnsetTimes.size()][(ONSET_IND + 1) + 2*numVoices];
@@ -785,10 +838,31 @@ public class TabMapper {
 		// Set bars and onsets
 		for (int i = 0; i < allOnsetTimes.size(); i++) {
 			Rational onsetFrac = allOnsetTimes.get(i);
+			System.out.println("i, onsetFrac = " + i + ", " + onsetFrac);
 //			System.out.println(onsetFrac);
 //			System.out.println(Arrays.toString(Tablature.getMetricPosition(onsetFrac, tab.getMeterInfo())));
 			grid[i][BAR_IND] = Tablature.getMetricPosition(onsetFrac, tab.getMeterInfo())[0].getNumer();
+//			if (onsetFrac.equals(new Rational(197291, 1024))) {
+//				System.out.println(onsetFrac.mul(smallestDur).getNumer());
+//				System.exit(0);
+//			}
+//			Rational onsetRaw = onsetFrac.mul(smallestDur);
+//			// The denominator should always be 1 because of multiplication with smallest rhythmic value;
+//			// however, in the case of triplet rounding issues it can be not 1 
+//			if (onsetRaw.getDenom() != 1) {
+//				System.out.println("not 1!");
+//				System.out.println(grid[i][BAR_IND]);
+//				System.out.println(onsetRaw);
+//				onsetRaw = roundFraction(onsetRaw);
+//				System.out.println(onsetRaw);
+//				System.exit(0);
+//			}
+//			grid[i][ONSET_IND] = onsetRaw.getNumer(); // denominator is always 1 because of multiplication with smallest rhythmic value
 			grid[i][ONSET_IND] = onsetFrac.mul(smallestDur).getNumer(); // denominator is always 1 because of multiplication with smallest rhythmic value	
+//			if (grid[i][ONSET_IND] == 591873) {
+//				System.out.println("i = " + i);
+//				System.exit(0);
+//			}
 		}
 		// Set pitches and durations
 		for (int i = numVoices - 1; i >= 0; i--) {
@@ -804,9 +878,7 @@ public class TabMapper {
 			}
 		}
 					
-		// Make mask. Contains, per chord: bar, onset, pitches (low to high), durations (i.e., minimum 
-		// duration), indices
-		// Initialised with all values set to null
+		// Make mask; initialise with all values set to null
 		Integer[][] mask = new Integer[allOnsetTimes.size()][(ONSET_IND + 1) + 3*NUM_COURSES];
 		
 		// Set bars and onsets
@@ -1701,20 +1773,20 @@ public class TabMapper {
 //			new String[]{"1132_13_o_sio_potessi_donna_berchem_solo", "Berchem_-_O_s'io_potessi_donna"}
 			
 			// Tab reconstruction project 
-			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
-			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
-			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
-			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
+//			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
+//			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
+//			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
+//			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
 ////			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
-			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
-			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
-			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
-			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
-			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
-			new String[]{"sith_death-NEW", "sith_death-NEW"},
-			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
-			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
-			new String[]{"while_phoebus-II", "while_phoebus-II"},
+//			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
+//			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
+//			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
+//			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
+//			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
+//			new String[]{"sith_death-NEW", "sith_death-NEW"},
+//			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
+//			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
+//			new String[]{"while_phoebus-II", "while_phoebus-II"},
 			
 			// JosquIntab
 			// a. Mass sections
@@ -1753,7 +1825,7 @@ public class TabMapper {
 //			new String[]{"3591_008_fecit_potentiam_josquin", "Jos2004-Magnificat_Quarti_toni-Verse_6_Fecit_potentiam"},
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-1", "Jos1704-In_exitu_Israel_de_Egypto-1-143"},
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-2", "Jos1704-In_exitu_Israel_de_Egypto-144-280"},
-//			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
+			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
 //			new String[]{"5256_05_inviolata_integra_desprez-1", "Jos2404-Inviolata_integra_et_casta_es-1-63"},
 //			new String[]{"5256_05_inviolata_integra_desprez-2", "Jos2404-Inviolata_integra_et_casta_es-64-105"},
 //			new String[]{"5256_05_inviolata_integra_desprez-3", "Jos2404-Inviolata_integra_et_casta_es-106-144"},

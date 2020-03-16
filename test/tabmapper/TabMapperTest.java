@@ -103,6 +103,34 @@ public class TabMapperTest extends TestCase {
 	}
 
 
+	public void testRoundFraction() {
+		List<Rational> rats = Arrays.asList(new Rational[]{
+			new Rational(17, 4), // -1 gives 16/4 = 4/1
+			new Rational(606, 32), // +2 gives 608/32 = 19/1 
+			new Rational(795, 24), // -3 gives 792/24 = 33/1 
+			new Rational(828, 64) // +4 gives 832/64 = 13/1 
+		});
+		
+		List<Rational> expected = Arrays.asList(new Rational[]{
+			new Rational(4, 1), 
+			new Rational(19, 1), 
+			new Rational(33, 1), 
+			new Rational(13, 1) 
+		});
+		
+		List<Rational> actual = new ArrayList<>();
+		for (Rational r : rats) {
+			actual.add(TabMapper.roundFraction(r));
+		}
+		
+		assertEquals(expected.size(), actual.size());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i), actual.get(i));
+		}
+		assertEquals(expected, actual);
+	}
+
+
 	public void testGetLastPitchInVoices() {
 		Transcription trans = new Transcription(midiTestpiece, null);
 		List<Integer> availableVoices = Arrays.asList(new Integer[]{0, 1, 4});
