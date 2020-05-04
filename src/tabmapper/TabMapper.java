@@ -291,7 +291,8 @@ public class TabMapper {
 				List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(trans, /*tab,*/ btp, mi, trans.getKeyInfo(), 
-						mismatchInds, grandStaff, path + "mapped/" + tabName);
+						tab.getTripletOnsetPairs(), mismatchInds, grandStaff, 
+						path + "mapped/" + tabName);
 				}
 			}
 			// With full durations 
@@ -307,7 +308,8 @@ public class TabMapper {
 				List<Integer[]> mi = (tab == null) ? transDur.getMeterInfo() : tab.getMeterInfo();
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(transDur, /*tab,*/ btp, mi, transDur.getKeyInfo(), 
-						mismatchInds, grandStaff, path + "mapped/" + tabName + "-dur");
+						tab.getTripletOnsetPairs(), mismatchInds, grandStaff, 
+						path + "mapped/" + tabName + "-dur");
 				}
 			}
 		}
@@ -838,7 +840,7 @@ public class TabMapper {
 		// Set bars and onsets
 		for (int i = 0; i < allOnsetTimes.size(); i++) {
 			Rational onsetFrac = allOnsetTimes.get(i);
-			System.out.println("i, onsetFrac = " + i + ", " + onsetFrac);
+//			System.out.println("i, onsetFrac = " + i + ", " + onsetFrac);
 //			System.out.println(onsetFrac);
 //			System.out.println(Arrays.toString(Tablature.getMetricPosition(onsetFrac, tab.getMeterInfo())));
 			grid[i][BAR_IND] = Tablature.getMetricPosition(onsetFrac, tab.getMeterInfo())[0].getNumer();
