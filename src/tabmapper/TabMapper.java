@@ -372,7 +372,7 @@ public class TabMapper {
 	 */
 	private static List<Object> map(Transcription trans, Tablature tab, boolean includeOrnamentation,
 		Connection connection, int pieceIndex) {
-//-*-		System.out.println(">>> TabMapper.map() called");
+		System.out.println("\r\n>>> TabMapper.map() called");
 		Integer[][] btp = tab.getBasicTabSymbolProperties();
 		int numVoices = trans.getNumberOfVoices();
 		List<Double> emptyVoiceLabel = makeEmptyVoiceLabel(numVoices);
@@ -405,10 +405,11 @@ public class TabMapper {
 		List<Integer[][]> gridAndMask = makeGridAndMask(trans, tab);
 		Integer[][] grid = gridAndMask.get(0);
 		Integer[][] mask = gridAndMask.get(1);
+		System.out.println("G R I D");
 		for (Integer[] in : grid) {
 			System.out.println(Arrays.toString(in));
 		}
-		System.out.println("-*-*-*-*-*-*-");
+		System.out.println("M A S K");	
 		for (Integer[] in : mask) {
 			System.out.println(Arrays.toString(in));
 		}
