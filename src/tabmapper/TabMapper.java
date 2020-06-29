@@ -1805,24 +1805,26 @@ public class TabMapper {
 //			new String[]{"3584_001_pleni_missa_hercules_josquin", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-18-56"},
 //			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-2", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-57-88"},
 //			new String[]{"3585_002_benedictus_de_missa_pange_lingua_josquin", "Jos0403d-Missa_Pange_lingua-Sanctus-139-186"},
-//j-last	
 //			new String[]{"5190_17_cum_spiritu_sanctu_from_missa_sine_nomine", "Jos1202b-Missa_Sine_nomine-Gloria-103-132"},
 			
 			// b. Motets
+			// 5254_03_benedicta_es_coelorum_desprez-1 has 3(Q) triplets in bb. 23, 27, 70
+			// 5263_12_in_exitu_israel_de_egipto_desprez-3 has 3(Q) triplets in bb. 74-79
+			// 5256_05_inviolata_integra_desprez-2 has 3(Q) triplets in b. 19
+			// 5256_05_inviolata_integra_desprez-3 has 3(Q) triplets in bb. 21-22
+			// 4465_33-34_memor_esto-2 has 3(Q) triplets in bb. 64-74, 100-102, 109-113
+			// 5255_04_stabat_mater_dolorosa_desprez-2 has 3(Q) triplets in bb. 71-75, 77, 79-81, 83-85
 //			new String[]{"5265_14_absalon_fili_me_desprez", "Jos1401-Absalon_fili_mi"},
 //			new String[]{"3647_070_benedicta_est_coelorum_josquin_T", "Jos2313-Benedicta_es_celorum-1-107"},
 //			new String[]{"4964_01a_benedictum_es_coelorum_josquin", "Jos2313-Benedicta_es_celorum-1-107"},
-//j-last	
 //			new String[]{"4965_01b_per_illud_ave_josquin", "Jos2313-Benedicta_es_celorum-108-135"},
 //			new String[]{"4966_01c_nunc_mater_josquin", "Jos2313-Benedicta_es_celorum-136-176"},
 //			new String[]{"5254_03_benedicta_es_coelorum_desprez-1", "Jos2313-Benedicta_es_celorum-1-107"},
 //			new String[]{"5254_03_benedicta_es_coelorum_desprez-2", "Jos2313-Benedicta_es_celorum-108-135"},
 //			new String[]{"5254_03_benedicta_es_coelorum_desprez-3", "Jos2313-Benedicta_es_celorum-136-176"},
-			// TODO 0, 1, 32, 33, 36, 38
-//j-mul		
+			// TODO 0, 1, 32, 33, 36, 38	
 //			new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
 			// TODO 91, 93, 222, 226, 231, 234
-//j-mul	
 //			new String[]{"5702_benedicta-2", "Jos2313-Benedicta_es_celorum-108-135"},
 //			new String[]{"5702_benedicta-3", "Jos2313-Benedicta_es_celorum-136-176"},
 //			new String[]{"3591_008_fecit_potentiam_josquin", "Jos2004-Magnificat_Quarti_toni-Verse_6_Fecit_potentiam"},
@@ -1833,46 +1835,39 @@ public class TabMapper {
 //			new String[]{"5256_05_inviolata_integra_desprez-2", "Jos2404-Inviolata_integra_et_casta_es-64-105"},
 //			new String[]{"5256_05_inviolata_integra_desprez-3", "Jos2404-Inviolata_integra_et_casta_es-106-144"},
 //			new String[]{"4465_33-34_memor_esto-1", "Jos1714-Memor_esto_verbi_tui-1-165"},
-//			new String[]{"4465_33-34_memor_esto-2", "Jos1714-Memor_esto_verbi_tui-166-325"},
+			new String[]{"4465_33-34_memor_esto-2", "Jos1714-Memor_esto_verbi_tui-166-325"},
 //			new String[]{"932_milano_108_pater_noster_josquin-1", "Jos2009-Pater_noster-1-120"},
 //			new String[]{"932_milano_108_pater_noster_josquin-2", "Jos2009-Pater_noster-121-198"},
-//			new String[]{"5252_01_pater_noster_desprez-1", "Jos2009-Pater_noster-1-120"},
-//j-once	
+//			new String[]{"5252_01_pater_noster_desprez-1", "Jos2009-Pater_noster-1-120"},	
 //			new String[]{"5252_01_pater_noster_desprez-2", "Jos2009-Pater_noster-121-198"},
 //			new String[]{"3649_072_praeter_rerum_seriem_josquin_T", "Jos2411-Preter_rerum_seriem-1-87"},		
 //			new String[]{"5253_02_praeter_rerum_seriem_desprez-1", "Jos2411-Preter_rerum_seriem-1-87"},
 //			new String[]{"5253_02_praeter_rerum_seriem_desprez-2", "Jos2411-Preter_rerum_seriem-88-185"},
 //			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-1", "Jos2411-Preter_rerum_seriem-1-87"},
-//j-once	
-//			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-2", "Jos2411-Preter_rerum_seriem-88-185"},
-//j-once	
+//			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-2", "Jos2411-Preter_rerum_seriem-88-185"},	
 //			new String[]{"1274_12_qui_habitat_in_adjutorio-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
 //			new String[]{"1274_12_qui_habitat_in_adjutorio-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
 //			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
 //			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
 			// TODO 0, 1
-//j-mul		
 //			new String[]{"933_milano_109_stabat_mater_dolorosa_josquin", "Jos2509-Stabat_mater__Comme_femme-1-88"},
-//			new String[]{"5255_04_stabat_mater_dolorosa_desprez-1", "Jos2509-Stabat_mater__Comme_femme-1-88"},			
-			new String[]{"5255_04_stabat_mater_dolorosa_desprez-2", "Jos2509-Stabat_mater__Comme_femme-89-180"},
+//			new String[]{"5255_04_stabat_mater_dolorosa_desprez-1", "Jos2509-Stabat_mater__Comme_femme-1-88"},
+//			new String[]{"5255_04_stabat_mater_dolorosa_desprez-2", "Jos2509-Stabat_mater__Comme_femme-89-180"},
 
 			// c. Chansons
 //			new String[]{"4400_45_ach_unfall_was", "Jos2829-Qui_belles_amours"},
 //			new String[]{"4481_49_ach_unfal_wes_zeigst_du_mich", "Jos2829-Qui_belles_amours"},
 //			new String[] {"4406_51_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
 //			new String[] {"4467_37_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
-//			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},
-//j-once	
+//			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},	
 //			new String[] {"1030_coment_peult_avoir_joye", "Jos2807-Comment_peult_avoir_joye"},
 //			new String[] {"1275_13_faulte_d_argent", "Jos2907-Faulte_dargent"},
 //			new String[] {"3638_061_lauda_sion_gombert_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
-//			new String[] {"5148_51_respice_in_me_deus._F#_lute_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
-//j-once	
+//			new String[] {"5148_51_respice_in_me_deus._F#_lute_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},	
 //			new String[] {"5260_09_date_siceram_morentibus_sermisy", "Jos2911-Je_ne_me_puis_tenir_daimer"},
 //			new String[] {"4438_07_la_plus_des_plus", "Jos2722-La_plus_des_plus"},
 ////			new String[] {"4443_12_la_bernardina", "Jos2721-La_Bernardina"},
-////			new String[] {"1033_la_bernadina_solo_orig", "Jos2721-La_Bernardina"},
-//j-once	
+////			new String[] {"1033_la_bernadina_solo_orig", "Jos2721-La_Bernardina"},	
 //			new String[] {"5191_18_mille_regres", "Jos2825-Mille_regretz"},
 //			new String[] {"4482_50_mille_regrets_P", "Jos2825-Mille_regretz"},
 //			new String[] {"4469_39_plus_nulz_regrets_P", "Jos2828-Plus_nulz_regrets"},
