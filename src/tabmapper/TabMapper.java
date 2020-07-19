@@ -784,6 +784,53 @@ public class TabMapper {
 	}
 
 
+	/**
+	 * Finds the multiple of the given grid value that is the closest to the given onset. 
+	 * The Rational returned is cast as a multiple of the grid value's denominator.
+	 * 
+	 * If the closest multiple above the given onset is equally close as that below, the 
+	 * closest multiple above is returned. Example: 17/192 is one away from 16/192 (8/96) 
+	 * and from 18/192 (9/96).
+	 * 
+	 * @param currOnset
+	 * @param gridValue
+	 * @return
+	 */
+	// TESTED
+	static Rational findClosestMultiple(Rational currOnset, Rational gridValue) {
+		// Determine parts before and after decimal point
+		int beforeDecPoint = (int) Math.floor(currOnset.toDouble());
+		double afterDecPoint = currOnset.toDouble() % 1;
+
+		// Find the closest multiple of gridValue
+		double minDist = Double.MAX_VALUE;
+		Rational afterDecPointAsRat = null;
+		int gridValDen = gridValue.getDenom();
+		for (int j = 0; j < gridValDen; j++) {
+			Rational currRat = new Rational(j, gridValDen);
+			double currDist = Math.abs(afterDecPoint - currRat.toDouble());
+			if (currDist < minDist) {
+				minDist = currDist;
+				afterDecPointAsRat = currRat;
+			}
+		}
+		afterDecPointAsRat.reduce();
+
+		// Correct currOnset
+		int den = afterDecPointAsRat.getDenom();
+		Rational currOnsetAfter = new Rational(beforeDecPoint*den, den).add(afterDecPointAsRat);
+		currOnsetAfter.reduce();
+
+		// Cast as multiple of gridVal. E.g., in the case of 578/3 (and 1/96 as gridVal), both
+		// num and den must be multiplied with 96/3 = 32, yielding (578*32)/3*32 = 18496/96
+		int multiplier = gridValDen / currOnsetAfter.getDenom(); // NB: this will always give an int because of the rounding done above
+		currOnsetAfter = 
+			new Rational((currOnsetAfter.getNumer()*multiplier), 
+			(currOnsetAfter.getDenom()*multiplier));
+		return currOnsetAfter;
+	}
+
+
 	// F I R S T - O R D E R  H E L P E R S
 	/**
 	 * Returns grid and mask.
@@ -800,7 +847,7 @@ public class TabMapper {
 	private static List<Integer[][]> makeGridAndMask(Transcription trans, Tablature tab) {
 		Integer[][] bnp = trans.getBasicNoteProperties();
 		Integer[][] btp = tab.getBasicTabSymbolProperties();
-		
+
 		// Determine smallest duration in MIDI (currently simply set to Tablature.SMALLEST_RHYTHMIC_VALUE)
 		int smallestDur = -1;
 		Rational smallestDurInMIDI = Rational.ONE;
@@ -814,24 +861,31 @@ public class TabMapper {
 		}
 		smallestDur = SMALLEST_DUR;
 
-		// Get union of sets of onset times in tab and trans
-		List<Rational> allOnsetTimes = new ArrayList<>(trans.getAllOnsetTimes());
-//		System.out.println("allOnsetTimes trans");
-//		for (Rational r : allOnsetTimes) {
-//			System.out.println(r);
-//		}
-//		System.out.println("allOnsetTimes tab");
-//		for (Rational r : tab.getAllOnsetTimes()) {
-//			r.reduce();
-//			System.out.println(r);
-//		}
-//		System.exit(0);
+		// Get union of onset times in tab and trans. Each element of allOnsetTimes contains 
+		// at element 0: the actual onset time 
+		// at element 1: if the actual onset time is a multiple of 1/SRV, the actual onset time
+		//               if not (this can occur in the Transcription only), the actual onset 
+		//               time rounded to the closest multiple of 1/SRV
+		List<Rational[]> allOnsetTimes = new ArrayList<>();
+		// a. Get all onset times in the Transcription
+		for (Rational r : trans.getAllOnsetTimes()) {
+			// If the onset is not a multiple of smallest dur, it is an imprecise triplet 
+			// onset that must rounded to the nearest triplet value
+			Rational rounded = r;
+			if (!ToolBox.isMultiple(r, new Rational(1, smallestDur))) {
+				rounded = findClosestMultiple(r, new Rational(1, smallestDur));
+			}
+			allOnsetTimes.add(new Rational[]{r, rounded});
+		}
+		// b. Get all onset times in the Tablature
 		for (Rational r : tab.getAllOnsetTimes()) {
-			if (!allOnsetTimes.contains(r)) {
-				allOnsetTimes.add(r);
+			// Add only if it is not already in the (rounded) onset times in the Transcription
+			if (!ToolBox.getItemsAtIndexRational(allOnsetTimes, 1).contains(r)) {
+				allOnsetTimes.add(new Rational[]{r, r});
 			}
 		}
-		Collections.sort(allOnsetTimes);
+		// Sort by rounded
+		ToolBox.sortByRational(allOnsetTimes, 1);
 
 		// Make grid; initialise with all values set to null  
 		NotationSystem score = trans.getPiece().getScore();
@@ -840,39 +894,25 @@ public class TabMapper {
 
 		// Set bars and onsets
 		for (int i = 0; i < allOnsetTimes.size(); i++) {
-			Rational onsetFrac = allOnsetTimes.get(i);
-//			System.out.println("i, onsetFrac = " + i + ", " + onsetFrac);
-//			System.out.println(onsetFrac);
-//			System.out.println(Arrays.toString(Tablature.getMetricPosition(onsetFrac, tab.getMeterInfo())));
-			grid[i][BAR_IND] = Tablature.getMetricPosition(onsetFrac, tab.getMeterInfo())[0].getNumer();
-//			if (onsetFrac.equals(new Rational(197291, 1024))) {
-//				System.out.println(onsetFrac.mul(smallestDur).getNumer());
-//				System.exit(0);
-//			}
-//			Rational onsetRaw = onsetFrac.mul(smallestDur);
-//			// The denominator should always be 1 because of multiplication with smallest rhythmic value;
-//			// however, in the case of triplet rounding issues it can be not 1 
-//			if (onsetRaw.getDenom() != 1) {
-//				System.out.println("not 1!");
-//				System.out.println(grid[i][BAR_IND]);
-//				System.out.println(onsetRaw);
-//				onsetRaw = roundFraction(onsetRaw);
-//				System.out.println(onsetRaw);
-//				System.exit(0);
-//			}
-//			grid[i][ONSET_IND] = onsetRaw.getNumer(); // denominator is always 1 because of multiplication with smallest rhythmic value
-			grid[i][ONSET_IND] = onsetFrac.mul(smallestDur).getNumer(); // denominator is always 1 because of multiplication with smallest rhythmic value	
-//			if (grid[i][ONSET_IND] == 591873) {
-//				System.out.println("i = " + i);
-//				System.exit(0);
-//			}
+			Rational onsetFracActual = allOnsetTimes.get(i)[0];
+			Rational onsetFracRounded = allOnsetTimes.get(i)[1];
+			grid[i][BAR_IND] = Tablature.getMetricPosition(onsetFracActual, tab.getMeterInfo())[0].getNumer();
+			if (grid[i][BAR_IND] == 74) {
+				System.out.println("onsetFrac orig = " + onsetFracActual);
+			}
+
+			// Set onset, using the rounded value (which is only different from the actual 
+			// value if rounding was actually necessary)
+			grid[i][ONSET_IND] = onsetFracRounded.mul(smallestDur).getNumer(); // denominator is always 1 because of multiplication with smallest rhythmic value
 		}
 		// Set pitches and durations
 		for (int i = numVoices - 1; i >= 0; i--) {
 			NotationVoice nv = score.get(i).get(0);
 			for (NotationChord nc : nv) {
 				Note n = nc.get(0);
-				int gridRowInd = allOnsetTimes.indexOf(n.getMetricTime()); 
+				List<Rational> allOnsetTimesActual = 
+					ToolBox.getItemsAtIndexRational(allOnsetTimes, 0);
+				int gridRowInd = allOnsetTimesActual.indexOf(n.getMetricTime()); 
 				// Add pitch at index of voice i
 				grid[gridRowInd][(ONSET_IND + 1) + ((numVoices-1)-i)] = n.getMidiPitch();
 				// Add duration at index of voice i
@@ -886,7 +926,7 @@ public class TabMapper {
 		
 		// Set bars and onsets
 		for (int i = 0; i < allOnsetTimes.size(); i++) {
-			Rational onsetFrac = allOnsetTimes.get(i);
+			Rational onsetFrac = allOnsetTimes.get(i)[1];
 			mask[i][BAR_IND] = Tablature.getMetricPosition(onsetFrac, tab.getMeterInfo())[0].getNumer();
 			mask[i][ONSET_IND] = onsetFrac.mul(smallestDur).getNumer(); // denominator is always 1 because of multiplication with smallest rhythmic value	
 		}
@@ -894,11 +934,13 @@ public class TabMapper {
 		for (int i = 0; i < btp.length; i++) {
 			int onset = btp[i][Tablature.ONSET_TIME];
 			Rational[] posInBar = Tablature.getMetricPosition(new Rational(onset, smallestDur), tab.getMeterInfo());
-			int bar = posInBar[0].getNumer();
-			Rational pos = posInBar[1];
-			pos.reduce();
+//			int bar = posInBar[0].getNumer();
+//			Rational pos = posInBar[1];
+//			pos.reduce();
 //			System.out.println("i = " + i + "; bar " + bar + "; pos " + pos);
-			Integer[] currRow = mask[allOnsetTimes.indexOf(new Rational(onset, smallestDur))];
+			List<Rational> allOnsetTimesRounded = 
+				ToolBox.getItemsAtIndexRational(allOnsetTimes, 1);
+			Integer[] currRow = mask[allOnsetTimesRounded.indexOf(new Rational(onset, smallestDur))];
 			int chordSize = btp[i][Tablature.CHORD_SIZE_AS_NUM_ONSETS];
 			for (int j = i; j < i + chordSize; j++) {
 				currRow[(ONSET_IND + 1) + (j-i)] = btp[j][Tablature.PITCH];
@@ -1796,7 +1838,7 @@ public class TabMapper {
 //			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
 //			new String[]{"5266_15_cum_sancto_spiritu_desprez", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
 //			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-1", "Jos0303c-Missa_De_beata_virgine-Credo-1-102"},
-//			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-2", "Jos0303c-Missa_De_beata_virgine-Credo-103-159"},
+//JEP		new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-2", "Jos0303c-Missa_De_beata_virgine-Credo-103-159"},
 //			new String[]{"5106_10_misa_de_faysan_regres_2_gloria", "Jos0801b-Missa_Faisant_regretz-Gloria-37-94"},
 //			new String[]{"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-1", "Jos0801d-Missa_Faisant_regretz-Sanctus-1-22"},
 //			new String[]{"5107_11_misa_de_faysan_regres_pleni", "Jos0801d-Missa_Faisant_regretz-Sanctus-23-67"},
@@ -1814,27 +1856,32 @@ public class TabMapper {
 			// 5256_05_inviolata_integra_desprez-3 has 3(Q) triplets in bb. 21-22
 			// 4465_33-34_memor_esto-2 has 3(Q) triplets in bb. 64-74, 100-102, 109-113
 			// 5255_04_stabat_mater_dolorosa_desprez-2 has 3(Q) triplets in bb. 71-75, 77, 79-81, 83-85
-//			new String[]{"5265_14_absalon_fili_me_desprez", "Jos1401-Absalon_fili_mi"},
-//			new String[]{"3647_070_benedicta_est_coelorum_josquin_T", "Jos2313-Benedicta_es_celorum-1-107"},
-//			new String[]{"4964_01a_benedictum_es_coelorum_josquin", "Jos2313-Benedicta_es_celorum-1-107"},
+//JEP		new String[]{"5265_14_absalon_fili_me_desprez", "Jos1401-Absalon_fili_mi"},
+//JEP		new String[]{"3647_070_benedicta_est_coelorum_josquin_T", "Jos2313-Benedicta_es_celorum-1-107"},
+//JEP		new String[]{"4964_01a_benedictum_es_coelorum_josquin", "Jos2313-Benedicta_es_celorum-1-107"},
 //			new String[]{"4965_01b_per_illud_ave_josquin", "Jos2313-Benedicta_es_celorum-108-135"},
 //			new String[]{"4966_01c_nunc_mater_josquin", "Jos2313-Benedicta_es_celorum-136-176"},
+			//JEP
 //			new String[]{"5254_03_benedicta_es_coelorum_desprez-1", "Jos2313-Benedicta_es_celorum-1-107"},
 //			new String[]{"5254_03_benedicta_es_coelorum_desprez-2", "Jos2313-Benedicta_es_celorum-108-135"},
 //			new String[]{"5254_03_benedicta_es_coelorum_desprez-3", "Jos2313-Benedicta_es_celorum-136-176"},
 			// TODO 0, 1, 32, 33, 36, 38	
-//			new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
+//JEP		new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
 			// TODO 91, 93, 222, 226, 231, 234
 //			new String[]{"5702_benedicta-2", "Jos2313-Benedicta_es_celorum-108-135"},
 //			new String[]{"5702_benedicta-3", "Jos2313-Benedicta_es_celorum-136-176"},
 //			new String[]{"3591_008_fecit_potentiam_josquin", "Jos2004-Magnificat_Quarti_toni-Verse_6_Fecit_potentiam"},
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-1", "Jos1704-In_exitu_Israel_de_Egypto-1-143"},
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-2", "Jos1704-In_exitu_Israel_de_Egypto-144-280"},
+			// JEP
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
 //			new String[]{"5256_05_inviolata_integra_desprez-1", "Jos2404-Inviolata_integra_et_casta_es-1-63"},
+			//JEP
 //			new String[]{"5256_05_inviolata_integra_desprez-2", "Jos2404-Inviolata_integra_et_casta_es-64-105"},
+			//JEP
 //			new String[]{"5256_05_inviolata_integra_desprez-3", "Jos2404-Inviolata_integra_et_casta_es-106-144"},
 //			new String[]{"4465_33-34_memor_esto-1", "Jos1714-Memor_esto_verbi_tui-1-165"},
+			//JEP		
 //			new String[]{"4465_33-34_memor_esto-2", "Jos1714-Memor_esto_verbi_tui-166-325"},
 //			new String[]{"932_milano_108_pater_noster_josquin-1", "Jos2009-Pater_noster-1-120"},
 //			new String[]{"932_milano_108_pater_noster_josquin-2", "Jos2009-Pater_noster-121-198"},
@@ -1846,12 +1893,13 @@ public class TabMapper {
 //			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-1", "Jos2411-Preter_rerum_seriem-1-87"},
 //			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-2", "Jos2411-Preter_rerum_seriem-88-185"},	
 //			new String[]{"1274_12_qui_habitat_in_adjutorio-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
-//			new String[]{"1274_12_qui_habitat_in_adjutorio-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
+//JEP			new String[]{"1274_12_qui_habitat_in_adjutorio-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
 //			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
-//			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
+//JEP			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
 			// TODO 0, 1
 //			new String[]{"933_milano_109_stabat_mater_dolorosa_josquin", "Jos2509-Stabat_mater__Comme_femme-1-88"},
 //			new String[]{"5255_04_stabat_mater_dolorosa_desprez-1", "Jos2509-Stabat_mater__Comme_femme-1-88"},
+			//JEP		
 			new String[]{"5255_04_stabat_mater_dolorosa_desprez-2", "Jos2509-Stabat_mater__Comme_femme-89-180"},
 
 			// c. Chansons

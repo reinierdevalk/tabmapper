@@ -31,6 +31,31 @@ public class TabMapperTest extends TestCase {
 	}
 
 
+	public void testFindClosestMultiple() {
+		Rational gridVal = new Rational(1, 96);
+		List<Rational> onsets = Arrays.asList(new Rational[]{
+			new Rational(1, 2), // is equal to multiple
+			new Rational(3, 7), // closest multiple below actual value
+			new Rational(22, 9), // closest multiple above actual value
+			new Rational(17, 192), // closest multiple below and above actual value equally close
+		});
+
+		List<Rational> expected = Arrays.asList(new Rational[]{
+			new Rational(48, 96),
+			new Rational(41, 96),
+			new Rational((2*96)+43, 96),
+			new Rational(9, 96)
+		});
+
+		List<Rational> actual = new ArrayList<>();
+		for (Rational r : onsets) {
+			actual.add(TabMapper.findClosestMultiple(r, gridVal));
+		}
+
+		assertEquals(expected, actual);
+	}
+
+
 	public void testFindClosestPitchesAndVoices() {
 		Transcription trans = new Transcription(midiTestpiece, encodingTestpiece);
 		Tablature tab = new Tablature(encodingTestpiece, false);
