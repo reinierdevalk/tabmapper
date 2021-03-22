@@ -22,8 +22,8 @@ public class TabMapperTest extends TestCase {
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false);
 //		encodingTestpiece = new File(Runner.encodingsPathTest + "testpiece.tbp");
 //		midiTestpiece = new File(Runner.midiPathTest + "testpiece.mid");
-		encodingTestpiece = new File(MEIExport.rootDir + "data/encodings/test/" + "testpiece.tbp");
-		midiTestpiece = new File(MEIExport.rootDir + "data/MIDI/test/" + "testpiece.mid");
+		encodingTestpiece = new File(MEIExport.rootDir + "data/data/encodings/test/" + "testpiece.tbp");
+		midiTestpiece = new File(MEIExport.rootDir + "data/data/MIDI/test/" + "testpiece.mid");
 	}
 
 	protected void tearDown() throws Exception {

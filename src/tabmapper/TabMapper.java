@@ -393,13 +393,13 @@ public class TabMapper {
 		// 3/1, 2/1: beat level is W; two levels below is Q
 		// 3/2, 2/2: beat level is H; two levels below is E
 		int ornThreshold = -1;
-		if (meterInfo.get(0)[1] == 2) {
+		if (meterInfo.get(0)[Tablature.MI_DEN] == 2) {
 			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // *3 trp dur
 		}
-		else if (meterInfo.get(0)[1] == 1) {
+		else if (meterInfo.get(0)[Tablature.MI_DEN] == 1) {
 			ornThreshold = (Transcription.QUARTER.indexOf(1.0) + 1)*3; // *3 trp dur
 		}
-		else if (meterInfo.get(0)[0] == 4 && meterInfo.get(0)[1] == 4) { // TODO
+		else if (meterInfo.get(0)[Tablature.MI_NUM] == 4 && meterInfo.get(0)[Tablature.MI_DEN] == 4) { // TODO
 			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // * 3 trp dur
 		}
 
@@ -648,7 +648,7 @@ public class TabMapper {
 //									ornChMask[0] + " " + Tablature.getMetricPosition(
 //									new Rational(ornChMask[1], SMALLEST_DUR), meterInfo)[1] + "," +	
 									ToolBox.getMetricPositionAsString(Tablature.getMetricPosition(
-									new Rational(ornChMask[ONSET_IND], SMALLEST_DUR), meterInfo)) + "," +
+										new Rational(ornChMask[ONSET_IND], SMALLEST_DUR), meterInfo)) + "," +
 									closestVoice + "," + "n/a" + "," + "ornamentation");
 							}
 						}
