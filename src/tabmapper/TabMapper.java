@@ -25,7 +25,6 @@ import tools.ToolBox;
 import utility.DataConverter;
 
 public class TabMapper {
-
 	private static final int BAR_IND = 0;
 	private static final int ONSET_IND = 1;
 	public static final int SMALLEST_DUR = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
@@ -291,7 +290,7 @@ public class TabMapper {
 				trans.setColourIndices(mismatchInds);
 				List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
 				if (!skip.contains(tabName)) {
-					MEIExport.exportMEIFile(trans, /*tab,*/ btp, mi, trans.getKeyInfo(), 
+					MEIExport.exportMEIFile(trans, btp, mi, trans.getKeyInfo(), 
 						tab.getTripletOnsetPairs(), mismatchInds, grandStaff, 
 						path + "mapped/" + tabName);
 				}
@@ -308,7 +307,7 @@ public class TabMapper {
 				transDur.setColourIndices(mismatchInds);
 				List<Integer[]> mi = (tab == null) ? transDur.getMeterInfo() : tab.getMeterInfo();
 				if (!skip.contains(tabName)) {
-					MEIExport.exportMEIFile(transDur, /*tab,*/ btp, mi, transDur.getKeyInfo(), 
+					MEIExport.exportMEIFile(transDur, btp, mi, transDur.getKeyInfo(), 
 						tab.getTripletOnsetPairs(), mismatchInds, grandStaff, 
 						path + "mapped/" + tabName + "-dur");
 				}
@@ -1172,8 +1171,8 @@ public class TabMapper {
 		
 		// Assume one key for the whole piece
 		Integer[] key = keyInfo.get(0); 
-		int keySig = key[0]; // num b (<0) / # (>0) 
-		int scale = key[1]; // major (0) / minor (1)
+		int keySig = key[Transcription.KI_KEY]; // num b (<0) / # (>0) 
+		int scale = key[Transcription.KI_MODE]; // major (0) / minor (1)
 		int base = KEY_SIGS.get(keySig)[scale]%12;
 		List<Integer[]> fictaPairs = (scale == 0) ? fictaPairsMajor : fictaPairsMinor;
 //		List<Integer> intervals = (scale == 0) ? new ArrayList<Integer>(MAJOR) : new ArrayList<Integer>(MINOR);		
