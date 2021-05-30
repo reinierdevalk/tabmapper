@@ -144,7 +144,7 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
 //		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
-		path = "F:/research/data/data/josquintab/";
+//		path = "F:/research/data/data/josquintab/";
 
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
@@ -408,7 +408,7 @@ public class TabMapper {
 		Integer[][] mask = gridAndMask.get(1);
 		System.out.println("G R I D");
 		for (Integer[] in : grid) {
-			System.out.println(Arrays.toString(in));
+//			System.out.println(Arrays.toString(in));
 		}
 		System.out.println("M A S K");	
 		for (Integer[] in : mask) {
@@ -508,7 +508,8 @@ public class TabMapper {
 					Collections.reverse(activeVoices);				
 					List<Integer> nonMappedSNUPitches = intLists.get(4);
 					List<Integer> extendedSNUVoices = intLists.get(5);
-					List<List<Double>> voiceLabelsCurrChord = (List<List<Double>>) initialMapping.get(1);
+					List<List<Double>> voiceLabelsCurrChord = 
+						(List<List<Double>>) initialMapping.get(1);
 
 //-*-					System.out.println("pitchesNotInMIDI        " + pitchesNotInMIDI);
 //					System.out.println("pitchesNotInMIDIOrig    " + pitchesNotInMIDIOriginal);
@@ -988,34 +989,28 @@ public class TabMapper {
 		for (int i = 0; i < pitchesTab.size(); i++) {
 			int pitchInTab = pitchesTab.get(i);
 			int pitchInd = indicesTab.get(i);
-//			if (Collections.frequency(pitchesTab, pitchInTab) > 2) {
-//				throw new RuntimeException("Pitch " + pitchInTab + " occurs more than twice (bar " +
-//					currGrid[ONSET_IND] + "; onset " + currOnset + ".");
-//			}
+			System.out.println(">>> pitchInTab = " + pitchInTab);
+
 			List<Double> currVoiceLabel = new ArrayList<Double>(emptyVoiceLabel);
 
 			// Map the pitch to (a) voice(s) and make a voice label
-			//
-			// in tab 	in MIDI			
-			// 1		0		--> unmapped pitch
-			// 1		1		--> mapped pitch
-			// 1		2		--> mapped SNU
-			// 2		0		--> unmapped unison (assumed to be rare)
-			// 2		1		--> half-mapped unison (assumed not to happen)
-			// 2		2		--> mapped unison
+			// notes tab 	notes MIDI			
+			// 1			0		--> unmapped pitch
+			// 1			1		--> mapped pitch
+			// 1			2		--> mapped SNU
+			// 2			0		--> unmapped unison (assumed to be rare)
+			// 2			1		--> half-mapped unison (assumed to be rare)
+			// 2			2		--> mapped unison
 			for (int j = 0; j < pitchesGT.size(); j++) {
 				if (pitchesGT.get(j) != null && pitchesGT.get(j) == pitchInTab) {
 					int voice = (numVoices-1) - j;
-//					System.out.println("j = " + j);
-//					System.out.println("--> pitchesGT.get(j) = " + pitchesGT.get(j));
-//					System.out.println("--> voice = " + voice);
-
 					int freqInTab = Collections.frequency(pitchesTab, pitchInTab); 
 					int freqInGT = Collections.frequency(pitchesGT, pitchInTab);
+					System.out.println("== voice   = " + voice);
+					System.out.println("== pitchGT = " + pitchesGT.get(j));
 
 					// In case of a possible SNU
 					if (freqInTab == 1 && freqInGT == 2) {
-//-*-						System.out.println("SNU!!");
 						// If there is room for a SNU: set voice
 						if (pitchesTab.size() < numVoices) {
 							currVoiceLabel.set(voice, 1.0);
@@ -1030,20 +1025,28 @@ public class TabMapper {
 					// In case of an extended SNU (a single note assigned to more than two voices)
 					// NB It is assumed that there will always be room for at least one SNU
 					else if (freqInTab == 1 && freqInGT > 2) {
-//-*-						System.out.println("extended SNU!!");
 						currVoiceLabel.set(voice, 1.0);
 					}
-
-					// In case of a unison: add only if first and last indices in lists align
+					// Half-mapped unison: add only if first unison note 
+					else if (freqInTab == 2 && freqInGT == 1) {
+						System.out.println("half-mapped unison!!");
+						System.out.println(activeVoices);
+						System.out.println(pitchesTab);
+						System.out.println(pitchesGT);
+						System.out.println(voice);
+						if (!activeVoices.contains(voice)) {
+							currVoiceLabel.set(voice, 1.0);
+						}
+					}
+					// Unison: add only if first and last indices in lists align
 					else if (freqInTab == 2 && freqInGT == 2) {
-//-*-						System.out.println("unison!!");
 						if (j == pitchesGT.indexOf(pitchInTab) && i == pitchesTab.indexOf(pitchInTab) || 
 							j == pitchesGT.lastIndexOf(pitchInTab) && i == pitchesTab.lastIndexOf(pitchInTab)) {
 							currVoiceLabel.set(voice, 1.0);
 						}
 					}
-					// In case of a unison and a SNU: the second unison note is a SNU
-					// NB: freqInTab can only be 2 in case of a unsion
+					// Unison and a SNU: the second unison note is a SNU
+					// NB: freqInTab can only be 2 in case of a unison
 					// NB2: it is assumed that freqInGT == 3
 					// Examples:
 					// Inviolata, pt. 2, b. 76: f-f-f = 5256_05_...-2, b. 13: f-f
@@ -1052,7 +1055,6 @@ public class TabMapper {
 					// Preter, pt.2, b. 164: d-d-d-a  = 5694_03_...-2, b. 77: d-d-a
 					// Je ne me puis, b. 54: a-a-a    = 5260_09      , b. 54: a-a-e
 					else if (freqInTab == 2 && freqInGT > 2) {
-//-*-						System.out.println("unison + SNU!!");
 						// Get the last index of the unison note, which is the second index 
 						// in pitchesGT
 						int secondInd = ToolBox.getIndexOfNthItem(pitchesGT, pitchInTab, 2);
@@ -1070,6 +1072,7 @@ public class TabMapper {
 					else {
 						currVoiceLabel.set(voice, 1.0);
 					}
+
 					// If the voice has been set: add to mapped voices
 					if (currVoiceLabel.get(voice) != 0.0 && !mappedVoices.contains(voice)) {
 						mappedVoices.add(voice);
@@ -1077,8 +1080,6 @@ public class TabMapper {
 					// Add to active voices if not done yet
 					if (currVoiceLabel.get(voice) != 0.0 && !activeVoices.contains(voice)) {
 						activeVoices.add(voice);
-//						Collections.sort(activeVoices);
-//						Collections.reverse(activeVoices);
 					}
 				}
 			}
@@ -1107,6 +1108,7 @@ public class TabMapper {
 			}
 		}
 
+		System.out.println(".... " + pitchesNotInMIDI);
 		List<List<Integer>> intLists = new ArrayList<>();
 		intLists.add(pitchesNotInMIDI);
 		intLists.add(indPitchesNotInMIDI);
@@ -1818,19 +1820,19 @@ public class TabMapper {
 			// Tours
 //			new String[]{"1132_13_o_sio_potessi_donna_berchem_solo", "Berchem_-_O_s'io_potessi_donna"}
 			
-			// Tab reconstruction project 
+			// Tab reconstruction project
 //			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
 //			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
 //			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
 //			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
 ////			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
-//			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
+			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
 //			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
 //			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
 //			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
 //			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
 //			new String[]{"sith_death-NEW", "sith_death-NEW"},
-//			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
+///			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
 //			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
 //			new String[]{"while_phoebus-II", "while_phoebus-II"},
 			
@@ -1921,7 +1923,7 @@ public class TabMapper {
 //			new String[] {"3638_061_lauda_sion_gombert_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
 //			new String[] {"5148_51_respice_in_me_deus._F#_lute_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},	
 //			new String[] {"5260_09_date_siceram_morentibus_sermisy", "Jos2911-Je_ne_me_puis_tenir_daimer"},
-			new String[] {"4438_07_la_plus_des_plus", "Jos2722-La_plus_des_plus"},
+//			new String[] {"4438_07_la_plus_des_plus", "Jos2722-La_plus_des_plus"},
 ////			new String[] {"4443_12_la_bernardina", "Jos2721-La_Bernardina"},
 ////			new String[] {"1033_la_bernadina_solo_orig", "Jos2721-La_Bernardina"},	
 //			new String[] {"5191_18_mille_regres", "Jos2825-Mille_regretz"},
