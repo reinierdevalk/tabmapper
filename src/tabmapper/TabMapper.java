@@ -317,7 +317,7 @@ public class TabMapper {
 //		System.out.println(modelsBnp);
 
 		System.out.println(
-			pieces.size() + (pieces.size() == 1 ? " piece (" : " pieces (") + 
+			"\r\n" + pieces.size() + (pieces.size() == 1 ? " piece (" : " pieces (") + 
 			totalNumNotes + " notes) processed" + "\r\n");
 		
 		System.out.println(resultsOverAllPieces);
@@ -342,7 +342,6 @@ public class TabMapper {
 		int denom = r.getDenom(); 
 		int diff = 1;
 		while (r.getDenom() != 1) {
-			System.out.println(diff);
 			// Try subtraction 
 			r = new Rational((numer-diff), denom);
 			r.reduce();
@@ -407,13 +406,13 @@ public class TabMapper {
 		Integer[][] grid = gridAndMask.get(0);
 		Integer[][] mask = gridAndMask.get(1);
 		System.out.println("G R I D");
-		for (Integer[] in : grid) {
+//		for (Integer[] in : grid) {
 //			System.out.println(Arrays.toString(in));
-		}
+//		}
 		System.out.println("M A S K");	
-		for (Integer[] in : mask) {
-			System.out.println(Arrays.toString(in));
-		}
+//		for (Integer[] in : mask) {
+//			System.out.println(Arrays.toString(in));
+//		}
 		List<List<Double>> voiceLabels = new ArrayList<List<Double>>();
 		StringBuffer res = new StringBuffer();
 		StringBuffer resCsv = new StringBuffer();
@@ -512,7 +511,7 @@ public class TabMapper {
 						(List<List<Double>>) initialMapping.get(1);
 
 //-*-					System.out.println("pitchesNotInMIDI        " + pitchesNotInMIDI);
-//					System.out.println("pitchesNotInMIDIOrig    " + pitchesNotInMIDIOriginal);
+//						System.out.println("pitchesNotInMIDIOrig    " + pitchesNotInMIDIOriginal);
 //-*-					System.out.println("indPitchesNotInMIDI     " + indPitchesNotInMIDI);
 //-*-					System.out.println("mappedVoices            " + mappedVoices);
 //-*-					System.out.println("activeVoices            " + activeVoices);
@@ -549,7 +548,7 @@ public class TabMapper {
 						voiceLabelsCurrChord = (List<List<Double>>) completedMapping.get(1);
 						cheapestMappingTotal = (List<Integer[]>) completedMapping.get(2);
 						numMismatches += cheapestMappingTotal.size();
-
+						
 						res.append("no match for pitches " + pitchesNotInMIDIOriginal + " at indices " + 
 							indPitchesNotInMIDI + " (bar " + currMask[0] + "; onset " + 
 							Tablature.getMetricPosition(new Rational(currMask[ONSET_IND], SMALLEST_DUR), 
@@ -899,9 +898,6 @@ public class TabMapper {
 			Rational onsetFracActual = allOnsetTimes.get(i)[0];
 			Rational onsetFracRounded = allOnsetTimes.get(i)[1];
 			grid[i][BAR_IND] = Tablature.getMetricPosition(onsetFracActual, tab.getMeterInfo())[0].getNumer();
-			if (grid[i][BAR_IND] == 74) {
-				System.out.println("onsetFrac orig = " + onsetFracActual);
-			}
 
 			// Set onset, using the rounded value (which is only different from the actual 
 			// value if rounding was actually necessary)
@@ -989,63 +985,89 @@ public class TabMapper {
 		for (int i = 0; i < pitchesTab.size(); i++) {
 			int pitchInTab = pitchesTab.get(i);
 			int pitchInd = indicesTab.get(i);
-			System.out.println(">>> pitchInTab = " + pitchInTab);
 
 			List<Double> currVoiceLabel = new ArrayList<Double>(emptyVoiceLabel);
 
-			// Map the pitch to (a) voice(s) and make a voice label
-			// notes tab 	notes MIDI			
-			// 1			0		--> unmapped pitch
-			// 1			1		--> mapped pitch
-			// 1			2		--> mapped SNU
-			// 2			0		--> unmapped unison (assumed to be rare)
-			// 2			1		--> half-mapped unison (assumed to be rare)
-			// 2			2		--> mapped unison
+			// Map the pitch to (a) voice(s) and create the voice label
+			// case		notes tab 	notes MIDI			
+			// (a)		1			0		--> unmapped pitch
+			// (b)		1			1		--> mapped pitch
+			// (c)		1			2		--> mapped SNU
+			// (d)		1			> 2		--> extended SNU		
+			// (e)		2			0		--> unmapped unison (assumed to be rare)
+			// (f)		2			1		--> half-mapped unison
+			// (g)		2			2		--> mapped unison
+			// (h)		2			> 2		--> extended unison (unison + SNU)
+			// NB: In the case of (a) and (e) above, the for-loop below is skipped and 
+			// the pitches are added to pitchesNotInMIDI
 			for (int j = 0; j < pitchesGT.size(); j++) {
 				if (pitchesGT.get(j) != null && pitchesGT.get(j) == pitchInTab) {
+					int pitchInGT = pitchesGT.get(j);
 					int voice = (numVoices-1) - j;
 					int freqInTab = Collections.frequency(pitchesTab, pitchInTab); 
 					int freqInGT = Collections.frequency(pitchesGT, pitchInTab);
-					System.out.println("== voice   = " + voice);
-					System.out.println("== pitchGT = " + pitchesGT.get(j));
 
-					// In case of a possible SNU
-					if (freqInTab == 1 && freqInGT == 2) {
+					// Setting byrdAfterCorrectionHalfMapped to true makes initial results 
+					// (as on Google doc) incorrect for 
+					// IAW: M_a 17 --> 18
+					// TLI: M_a  4 -->  5
+					// TMI: M_a 18 --> 19
+					// TODO remove boolean variable
+					boolean byrdAfterCorrectionHalfMapped = true; 
+
+					// (b) Mapped pitch (non-SNU and non-unison note)
+					if (freqInTab == 1 && freqInGT == 1) {
+						currVoiceLabel.set(voice, 1.0);
+					}
+					// (c) Mapped SNU
+					else if (freqInTab == 1 && freqInGT == 2) {
 						// If there is room for a SNU: set voice
 						if (pitchesTab.size() < numVoices) {
 							currVoiceLabel.set(voice, 1.0);
 						}
-						// If there is no room for a SNU: do not set voice (pitchInTab 
-						// is added to pitchesNotInMIDI)
+						// If there is no room for a SNU 
 						// NB This is assumed not to happen in an extended SNU case
 						else {
-							nonMappedSNUPitches.add(pitchInTab);
+							if (!byrdAfterCorrectionHalfMapped) {
+								// Do not set voice (pitchInTab is added to pitchesNotInMIDI)
+								nonMappedSNUPitches.add(pitchInTab);
+							}
+							else {
+								// If pitchInTab has not been set to a voice (i.e., is the lower
+								// SNU note, which comes first in pitchesInGT): set voice (this 
+								// will be the lower SNU voice; after setting, there is no more
+								// space to set the pitch also to the upper SNU voice)
+								if (pitchesGT.indexOf(pitchInGT) == j) {
+									currVoiceLabel.set(voice, 1.0);
+								}
+								// Else: do not set voice (pitchInTab is added to pitchesNotInMIDI)
+								else {
+									nonMappedSNUPitches.add(pitchInTab);
+								}
+							}
 						}
 					}
-					// In case of an extended SNU (a single note assigned to more than two voices)
+					// (d) Extended SNU (a single note assigned to more than two voices)
 					// NB It is assumed that there will always be room for at least one SNU
 					else if (freqInTab == 1 && freqInGT > 2) {
 						currVoiceLabel.set(voice, 1.0);
 					}
-					// Half-mapped unison: add only if first unison note 
-					else if (freqInTab == 2 && freqInGT == 1) {
-						System.out.println("half-mapped unison!!");
-						System.out.println(activeVoices);
-						System.out.println(pitchesTab);
-						System.out.println(pitchesGT);
-						System.out.println(voice);
+					// (f) Half-mapped unison
+					else if (freqInTab == 2 && freqInGT == 1 && byrdAfterCorrectionHalfMapped) {
+						// Add only if first unison note 
 						if (!activeVoices.contains(voice)) {
 							currVoiceLabel.set(voice, 1.0);
 						}
 					}
-					// Unison: add only if first and last indices in lists align
+					// (g) Mapped unison 
 					else if (freqInTab == 2 && freqInGT == 2) {
+						// Add only if first and last indices in lists align
 						if (j == pitchesGT.indexOf(pitchInTab) && i == pitchesTab.indexOf(pitchInTab) || 
 							j == pitchesGT.lastIndexOf(pitchInTab) && i == pitchesTab.lastIndexOf(pitchInTab)) {
 							currVoiceLabel.set(voice, 1.0);
 						}
 					}
-					// Unison and a SNU: the second unison note is a SNU
+					// (h) Extended unison (unison + SNU; the second unison note is a SNU)
 					// NB: freqInTab can only be 2 in case of a unison
 					// NB2: it is assumed that freqInGT == 3
 					// Examples:
@@ -1068,10 +1090,6 @@ public class TabMapper {
 							currVoiceLabel.set(voice, 1.0);
 						}
 					}
-					// In case of a non-SNU and non-unison note
-					else {
-						currVoiceLabel.set(voice, 1.0);
-					}
 
 					// If the voice has been set: add to mapped voices
 					if (currVoiceLabel.get(voice) != 0.0 && !mappedVoices.contains(voice)) {
@@ -1088,7 +1106,6 @@ public class TabMapper {
 				voiceLabelsChord.add(currVoiceLabel);
 			}
 			else {
-//				System.out.println("pitch " + pitchInTab + " (pitchInd " + pitchInd + ") not found!");
 				voiceLabelsChord.add(null);
 				pitchesNotInMIDI.add(pitchInTab);
 				indPitchesNotInMIDI.add(pitchInd);
@@ -1108,7 +1125,6 @@ public class TabMapper {
 			}
 		}
 
-		System.out.println(".... " + pitchesNotInMIDI);
 		List<List<Integer>> intLists = new ArrayList<>();
 		intLists.add(pitchesNotInMIDI);
 		intLists.add(indPitchesNotInMIDI);
@@ -1231,7 +1247,6 @@ public class TabMapper {
 			if (pitchesNotInMIDI.size() > activeAvailableVoices.size() 
 				&& Collections.frequency(pitchesNotInMIDI, null) != pitchesNotInMIDI.size() 
 				){ // the part after the && is to prevent unnecessary iterations
-//-*-				System.out.println("yes");
 				if (prevPitches != null && prevPitches.size() == pitchesTab.size()) {
 					isConsecutiveTupletChord = true;
 					System.out.println("isConsecutiveTupletChord in " + trans.getPieceName());
@@ -1821,18 +1836,18 @@ public class TabMapper {
 //			new String[]{"1132_13_o_sio_potessi_donna_berchem_solo", "Berchem_-_O_s'io_potessi_donna"}
 			
 			// Tab reconstruction project
-//			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
+			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
 //			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
 //			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
 //			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
 ////			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
-			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
+//			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
 //			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
 //			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
 //			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
 //			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
 //			new String[]{"sith_death-NEW", "sith_death-NEW"},
-///			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
+//			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
 //			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
 //			new String[]{"while_phoebus-II", "while_phoebus-II"},
 			
