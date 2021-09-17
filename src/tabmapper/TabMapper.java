@@ -144,7 +144,7 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
 //		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
-//		path = "F:/research/data/data/josquintab/";
+//		path = "F:/research/data/annotated/josquintab/";
 
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
