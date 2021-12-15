@@ -145,10 +145,11 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
 //		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
 //		path = "F:/research/data/annotated/josquintab/";
+		path = "C:/Users/Reinier/Desktop/test-capirola/";
 
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
-		boolean grandStaff = false;
+		boolean grandStaff = true;
 		boolean addDuration = false;
 		List<String[]> pieces = getPieces();
 		List<String> skip = getPiecesToSkip();
@@ -288,10 +289,10 @@ public class TabMapper {
 				// MEI 
 				Transcription trans = new Transcription(f, null);
 				trans.setColourIndices(mismatchInds);
-				List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
+//				List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
 				if (!skip.contains(tabName)) {
-					MEIExport.exportMEIFile(trans, btp, mi, trans.getKeyInfo(), 
-						tab.getTripletOnsetPairs(), mismatchInds, grandStaff, 
+					MEIExport.exportMEIFile(trans, tab, /*btp, trans.getKeyInfo(),
+						tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, 
 						path + "mapped/" + tabName);
 				}
 			}
@@ -305,10 +306,10 @@ public class TabMapper {
 				// MEI
 				Transcription transDur = new Transcription(fDur, null);
 				transDur.setColourIndices(mismatchInds);
-				List<Integer[]> mi = (tab == null) ? transDur.getMeterInfo() : tab.getMeterInfo();
+//				List<Integer[]> mi = (tab == null) ? transDur.getMeterInfo() : tab.getMeterInfo();
 				if (!skip.contains(tabName)) {
-					MEIExport.exportMEIFile(transDur, btp, mi, transDur.getKeyInfo(), 
-						tab.getTripletOnsetPairs(), mismatchInds, grandStaff, 
+					MEIExport.exportMEIFile(transDur, tab, /*btp, transDur.getKeyInfo(),
+						tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, 
 						path + "mapped/" + tabName + "-dur");
 				}
 			}
@@ -1834,9 +1835,10 @@ public class TabMapper {
 			
 			// Tours
 //			new String[]{"1132_13_o_sio_potessi_donna_berchem_solo", "Berchem_-_O_s'io_potessi_donna"}
+			new String[]{"capirola-1520-et_in_terra_pax", "Jos0403b-Missa_Pange_lingua-Gloria-Et_in_terra"},
 			
 			// Tab reconstruction project
-			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
+//			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
 //			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
 //			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
 //			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
