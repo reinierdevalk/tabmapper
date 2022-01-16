@@ -150,6 +150,8 @@ public class TabMapper {
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
 		boolean grandStaff = true;
+		boolean tabOnTop = true;
+		boolean alignWithMetricBarring = true;
 		boolean addDuration = false;
 		List<String[]> pieces = getPieces();
 		List<String> skip = getPiecesToSkip();
@@ -292,13 +294,16 @@ public class TabMapper {
 //				List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(trans, tab, /*btp, trans.getKeyInfo(),
-						tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, 
-						path + "mapped/" + tabName);
+						tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, tabOnTop,
+						alignWithMetricBarring, path + "mapped/" + tabName);
 				}
 			}
 			// With full durations 
 			if (addDuration) {
-				Rational maxDur = tab.getDiminutions().get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
+				List<Integer> dims = ToolBox.getItemsAtIndex(tab.getMeterInfo(), Tablature.MI_DIM);
+				Rational maxDur = dims.get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
+//				Rational maxDur = tab.getDiminutions().get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
+				
 				p = Transcription.completeDurations(p, maxDur);
 				// MIDI
 				File fDur = new File(path + "mapped/"+ tabName + "-dur.mid");
@@ -309,8 +314,8 @@ public class TabMapper {
 //				List<Integer[]> mi = (tab == null) ? transDur.getMeterInfo() : tab.getMeterInfo();
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(transDur, tab, /*btp, transDur.getKeyInfo(),
-						tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, 
-						path + "mapped/" + tabName + "-dur");
+						tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, tabOnTop,
+						alignWithMetricBarring, path + "mapped/" + tabName + "-dur");
 				}
 			}
 		}
