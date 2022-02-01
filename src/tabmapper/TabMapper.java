@@ -885,7 +885,8 @@ public class TabMapper {
 			allOnsetTimes.add(new Rational[]{r, rounded});
 		}
 		// b. Get all onset times in the Tablature
-		for (Rational r : tab.getAllOnsetTimes()) {
+		for (Rational r : ToolBox.getItemsAtIndex(tab.getMetricTimePerChord(false), 0)) {
+//		for (Rational r : tab.getAllOnsetTimes()) {
 			// Add only if it is not already in the (rounded) onset times in the Transcription
 			if (!ToolBox.getItemsAtIndexRational(allOnsetTimes, 1).contains(r)) {
 				allOnsetTimes.add(new Rational[]{r, r});
