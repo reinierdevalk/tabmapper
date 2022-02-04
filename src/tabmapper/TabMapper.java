@@ -20,6 +20,7 @@ import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import exports.MIDIExport;
 import representations.Tablature;
+import representations.Timeline;
 import representations.Transcription;
 import tools.ToolBox;
 import utility.DataConverter;
@@ -300,7 +301,9 @@ public class TabMapper {
 			}
 			// With full durations 
 			if (addDuration) {
-				List<Integer> dims = ToolBox.getItemsAtIndex(tab.getMeterInfo(), Tablature.MI_DIM);
+				List<Integer> dims = 
+					ToolBox.getItemsAtIndex(tab.getTimeline().getMeterInfo(), 
+					Timeline.MI_DIM);
 				Rational maxDur = dims.get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
 //				Rational maxDur = tab.getDiminutions().get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
 				
@@ -389,7 +392,7 @@ public class TabMapper {
 //-*-		keyInfo.forEach(in -> System.out.println(Arrays.toString(in)));
 
 		// Get meter information
-		List<Integer[]> meterInfo = tab.getMeterInfo();
+		List<Integer[]> meterInfo = tab.getTimeline().getMeterInfo();
 //-*-		System.out.println("meterInfo");
 //-*-		meterInfo.forEach(in -> System.out.println(Arrays.toString(in)));
 
@@ -397,14 +400,14 @@ public class TabMapper {
 		// 3/1, 2/1: beat level is W; two levels below is Q
 		// 3/2, 2/2: beat level is H; two levels below is E
 		int ornThreshold = -1;
-		if (meterInfo.get(0)[Transcription.MI_DEN] == 2) {
+		if (meterInfo.get(0)[Timeline.MI_DEN] == 2) {
 			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // *3 trp dur
 		}
-		else if (meterInfo.get(0)[Transcription.MI_DEN] == 1) {
+		else if (meterInfo.get(0)[Timeline.MI_DEN] == 1) {
 			ornThreshold = (Transcription.QUARTER.indexOf(1.0) + 1)*3; // *3 trp dur
 		}
-		else if (meterInfo.get(0)[Transcription.MI_NUM] == 4 && 
-			meterInfo.get(0)[Transcription.MI_DEN] == 4) { // TODO
+		else if (meterInfo.get(0)[Timeline.MI_NUM] == 4 && 
+			meterInfo.get(0)[Timeline.MI_DEN] == 4) { // TODO
 			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // * 3 trp dur
 		}
 
@@ -904,7 +907,9 @@ public class TabMapper {
 		for (int i = 0; i < allOnsetTimes.size(); i++) {
 			Rational onsetFracActual = allOnsetTimes.get(i)[0];
 			Rational onsetFracRounded = allOnsetTimes.get(i)[1];
-			grid[i][BAR_IND] = Tablature.getMetricPosition(onsetFracActual, tab.getMeterInfo())[0].getNumer();
+			grid[i][BAR_IND] = 
+				Tablature.getMetricPosition(onsetFracActual, 
+				tab.getTimeline().getMeterInfo())[0].getNumer();
 
 			// Set onset, using the rounded value (which is only different from the actual 
 			// value if rounding was actually necessary)
@@ -932,13 +937,17 @@ public class TabMapper {
 		// Set bars and onsets
 		for (int i = 0; i < allOnsetTimes.size(); i++) {
 			Rational onsetFrac = allOnsetTimes.get(i)[1];
-			mask[i][BAR_IND] = Tablature.getMetricPosition(onsetFrac, tab.getMeterInfo())[0].getNumer();
+			mask[i][BAR_IND] = 
+				Tablature.getMetricPosition(onsetFrac, 
+				tab.getTimeline().getMeterInfo())[0].getNumer();
 			mask[i][ONSET_IND] = onsetFrac.mul(smallestDur).getNumer(); // denominator is always 1 because of multiplication with smallest rhythmic value	
 		}
 		// Set pitches and durations
 		for (int i = 0; i < btp.length; i++) {
 			int onset = btp[i][Tablature.ONSET_TIME];
-			Rational[] posInBar = Tablature.getMetricPosition(new Rational(onset, smallestDur), tab.getMeterInfo());
+			Rational[] posInBar = 
+				Tablature.getMetricPosition(new Rational(onset, smallestDur), 
+				tab.getTimeline().getMeterInfo());
 //			int bar = posInBar[0].getNumer();
 //			Rational pos = posInBar[1];
 //			pos.reduce();
