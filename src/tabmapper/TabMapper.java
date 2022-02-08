@@ -457,7 +457,7 @@ public class TabMapper {
 //					currMask[0] + " " + Tablature.getMetricPosition(new Rational(currMask[1], 
 //					SMALLEST_DUR), meterInfo)[1];
 				String bar = 
-					ToolBox.getMetricPositionAsString(Tablature.getMetricPosition(
+					ToolBox.getMetricPositionAsString(Timeline.getMetricPosition(
 					new Rational(currMask[ONSET_IND], SMALLEST_DUR), meterInfo));
 
 				// Get pitches, arranged per voice (low-high), from GT
@@ -560,7 +560,7 @@ public class TabMapper {
 						
 						res.append("no match for pitches " + pitchesNotInMIDIOriginal + " at indices " + 
 							indPitchesNotInMIDI + " (bar " + currMask[0] + "; onset " + 
-							Tablature.getMetricPosition(new Rational(currMask[ONSET_IND], SMALLEST_DUR), 
+							Timeline.getMetricPosition(new Rational(currMask[ONSET_IND], SMALLEST_DUR), 
 							meterInfo)[1] + ")" + "\r\n");
 						res.append("pitches in tab chord : " + pitchesTab + "\r\n");
 						res.append("cheapest mapping (total cost " + 
@@ -656,7 +656,7 @@ public class TabMapper {
 									btp[ind][Tablature.CHORD_SEQ_NUM] + "," + 
 //									ornChMask[0] + " " + Tablature.getMetricPosition(
 //									new Rational(ornChMask[1], SMALLEST_DUR), meterInfo)[1] + "," +	
-									ToolBox.getMetricPositionAsString(Tablature.getMetricPosition(
+									ToolBox.getMetricPositionAsString(Timeline.getMetricPosition(
 										new Rational(ornChMask[ONSET_IND], SMALLEST_DUR), meterInfo)) + "," +
 									closestVoice + "," + "n/a" + "," + "ornamentation");
 							}
@@ -908,7 +908,7 @@ public class TabMapper {
 			Rational onsetFracActual = allOnsetTimes.get(i)[0];
 			Rational onsetFracRounded = allOnsetTimes.get(i)[1];
 			grid[i][BAR_IND] = 
-				Tablature.getMetricPosition(onsetFracActual, 
+				Timeline.getMetricPosition(onsetFracActual, 
 				tab.getTimeline().getMeterInfo())[0].getNumer();
 
 			// Set onset, using the rounded value (which is only different from the actual 
@@ -938,7 +938,7 @@ public class TabMapper {
 		for (int i = 0; i < allOnsetTimes.size(); i++) {
 			Rational onsetFrac = allOnsetTimes.get(i)[1];
 			mask[i][BAR_IND] = 
-				Tablature.getMetricPosition(onsetFrac, 
+				Timeline.getMetricPosition(onsetFrac, 
 				tab.getTimeline().getMeterInfo())[0].getNumer();
 			mask[i][ONSET_IND] = onsetFrac.mul(smallestDur).getNumer(); // denominator is always 1 because of multiplication with smallest rhythmic value	
 		}
@@ -946,7 +946,7 @@ public class TabMapper {
 		for (int i = 0; i < btp.length; i++) {
 			int onset = btp[i][Tablature.ONSET_TIME];
 			Rational[] posInBar = 
-				Tablature.getMetricPosition(new Rational(onset, smallestDur), 
+				Timeline.getMetricPosition(new Rational(onset, smallestDur), 
 				tab.getTimeline().getMeterInfo());
 //			int bar = posInBar[0].getNumer();
 //			Rational pos = posInBar[1];
