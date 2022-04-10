@@ -19,16 +19,18 @@ import de.uos.fmt.musitech.data.structure.Piece;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import exports.MIDIExport;
+import imports.MIDIImport;
 import representations.Tablature;
-import representations.Timeline;
 import representations.Transcription;
+import structure.Timeline;
+import tbp.Encoding;
 import tools.ToolBox;
 import utility.DataConverter;
 
 public class TabMapper {
 	private static final int BAR_IND = 0;
 	private static final int ONSET_IND = 1;
-	public static final int SMALLEST_DUR = Tablature.SMALLEST_RHYTHMIC_VALUE.getDenom();
+	public static final int SMALLEST_DUR = Tablature.SRV_DEN;
 	private static final int NUM_COURSES = 6;
 	private static enum Connection {LEFT, RIGHT};
 	private static StringBuffer resultsOverAllPieces;
@@ -227,9 +229,10 @@ public class TabMapper {
 	//		}
 
 			// Make tab; make model transcription
-			Tablature tab = new Tablature(new File(path + "tab/" + tabName + ".tbp"), false);	
+			Tablature tab = 
+				new Tablature(new File(path + "tab/" + tabName + Encoding.EXTENSION), false);	
 			Transcription model = 
-				new Transcription(new File(path + "MIDI/" + modelName + ".mid"), null);
+				new Transcription(new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION), null);
 			models.add(model.getNumberOfNotes());
 			modelsBnp.add(model.getBasicNoteProperties().length);
 			// If necessary: adapt maximum number of voices 
@@ -287,7 +290,7 @@ public class TabMapper {
 			// Without full durations
 			if (!addDuration) {
 				// MIDI 
-				File f = new File(path + "mapped/" + tabName + ".mid");
+				File f = new File(path + "mapped/" + tabName + MIDIImport.EXTENSION);
 				MIDIExport.exportMidiFile(p, instruments, f.getAbsolutePath());
 				// MEI 
 				Transcription trans = new Transcription(f, null);
@@ -2071,7 +2074,7 @@ public class TabMapper {
 
 
 //	private static void fitDuration(File f, double diminution) {
-//		f = new File("C:/Users/Reinier/Desktop/ISMIR-2019/test/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T.tbp");
+//		f = new File("C:/Users/Reinier/Desktop/ISMIR-2019/test/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T" + Encoding.EXTENSION);
 //		List<RhythmSymbol> allRs = Arrays.asList(new RhythmSymbol[]{
 //			RhythmSymbol.semifusa,
 //			RhythmSymbol.fusa,
@@ -2120,7 +2123,7 @@ public class TabMapper {
 //		System.out.println(res.toString());
 //		
 //		ToolBox.storeTextFile(res.toString(), 
-//			new File("C:/Users/Reinier/Desktop/ISMIR-2019/test/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T-halved.tbp"));
+//			new File("C:/Users/Reinier/Desktop/ISMIR-2019/test/tab/3618_041_benedictus_from_missa_de_l_homme_arme_morales_T-halved" + Encoding.EXTENSION));
 //		System.exit(0);
 //	}
 
