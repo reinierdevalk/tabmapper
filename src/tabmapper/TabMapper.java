@@ -16,6 +16,10 @@ import de.uos.fmt.musitech.data.score.NotationSystem;
 import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
+import de.uos.fmt.musitech.data.time.Marker;
+import de.uos.fmt.musitech.data.time.MetricalTimeLine;
+import de.uos.fmt.musitech.data.time.TimeSignature;
+import de.uos.fmt.musitech.data.time.TimeSignatureMarker;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import exports.MIDIExport;
@@ -148,7 +152,9 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
 //		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
 //		path = "F:/research/data/annotated/josquintab/";
-		path = "C:/Users/Reinier/Desktop/test-capirola/";
+//		path = "C:/Users/Reinier/Desktop/test-capirola/";
+		path = "C:/Users/Reinier/Desktop/tabmapper/";
+		
 
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
@@ -230,9 +236,32 @@ public class TabMapper {
 
 			// Make tab; make model transcription
 			Tablature tab = 
-				new Tablature(new File(path + "tab/" + tabName + Encoding.EXTENSION), false);	
+				new Tablature(new File(path + "tab/" + tabName + Encoding.EXTENSION), false);
 			Transcription model = 
-				new Transcription(new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION), null);
+				new Transcription(new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION), null, 
+				tab.getTimeline().getMeterInfo());
+			MetricalTimeLine mtl = model.getPiece().getMetricalTimeLine(); 
+			List<Rational[]> timeSigAndOnsets = new ArrayList<>(); 
+			for (int j = 0; j < mtl.size(); j++) {
+//				System.out.println(mtl.get(i));
+				Marker mk = mtl.get(j);
+				if (mk instanceof TimeSignatureMarker) {
+					TimeSignatureMarker tsm = (TimeSignatureMarker) mk;
+					TimeSignature ts = tsm.getTimeSignature();
+					Rational tsRat = new Rational(ts.getNumerator(), ts.getDenominator());
+					Rational mtRat = mk.getMetricTime();
+					if (!ToolBox.getItemsAtIndex(timeSigAndOnsets, 1).contains(mtRat)) {
+						timeSigAndOnsets.add(new Rational[]{new Rational(ts.getNumerator(), ts.getDenominator()), mtRat});
+					}
+				}
+//				if (!onsets.contains(mtl.get(i).getMetricTime())) {
+//					onsets.add(mtl.get(i).getMetricTime());
+//				}
+			}
+			for (Rational[] r : timeSigAndOnsets) {
+				System.out.println(Arrays.asList(r));
+			}
+//			System.exit(0);
 			models.add(model.getNumberOfNotes());
 			modelsBnp.add(model.getBasicNoteProperties().length);
 			// If necessary: adapt maximum number of voices 
@@ -251,6 +280,7 @@ public class TabMapper {
 				+ " chords and " + bnp.length + " notes");
 			System.out.println();
 			totalNumNotes += btp.length;
+//			System.exit(0);
 
 			// Map tab onto model
 			List<Object> mapping = map(model, tab, includeOrn, connection, i);
@@ -1853,7 +1883,7 @@ public class TabMapper {
 			
 			// Tours
 //			new String[]{"1132_13_o_sio_potessi_donna_berchem_solo", "Berchem_-_O_s'io_potessi_donna"}
-			new String[]{"capirola-1520-et_in_terra_pax", "Jos0403b-Missa_Pange_lingua-Gloria-Et_in_terra"},
+//			new String[]{"capirola-1520-et_in_terra_pax", "Jos0403b-Missa_Pange_lingua-Gloria-Et_in_terra"},
 			
 			// Tab reconstruction project
 //			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
@@ -1932,7 +1962,7 @@ public class TabMapper {
 //			new String[]{"5252_01_pater_noster_desprez-2", "Jos2009-Pater_noster-121-198"},
 //			new String[]{"3649_072_praeter_rerum_seriem_josquin_T", "Jos2411-Preter_rerum_seriem-1-87"},		
 //			new String[]{"5253_02_praeter_rerum_seriem_desprez-1", "Jos2411-Preter_rerum_seriem-1-87"},
-//			new String[]{"5253_02_praeter_rerum_seriem_desprez-2", "Jos2411-Preter_rerum_seriem-88-185"},
+			new String[]{"5253_02_praeter_rerum_seriem_desprez-2", "Jos2411-Preter_rerum_seriem-88-185"},
 //			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-1", "Jos2411-Preter_rerum_seriem-1-87"},
 //			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-2", "Jos2411-Preter_rerum_seriem-88-185"},	
 //			new String[]{"1274_12_qui_habitat_in_adjutorio-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
