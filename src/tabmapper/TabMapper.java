@@ -151,9 +151,9 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
 //		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
-//		path = "F:/research/data/annotated/josquintab/";
+		path = "F:/research/data/annotated/josquintab/";
 //		path = "C:/Users/Reinier/Desktop/test-capirola/";
-		path = "C:/Users/Reinier/Desktop/tabmapper/";
+//		path = "C:/Users/Reinier/Desktop/tabmapper/";
 		
 
 		boolean includeOrn = true;
@@ -237,31 +237,39 @@ public class TabMapper {
 			// Make tab; make model transcription
 			Tablature tab = 
 				new Tablature(new File(path + "tab/" + tabName + Encoding.EXTENSION), false);
+//			List<Integer[]> mapp = tab.mapTabBarsToMetricBars();
+//			for (Integer[] in : mapp) {
+//				System.out.println(Arrays.toString(in));
+//			}
+
 			Transcription model = 
-				new Transcription(new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION), null, 
-				tab.getTimeline().getMeterInfo());
-			MetricalTimeLine mtl = model.getPiece().getMetricalTimeLine(); 
-			List<Rational[]> timeSigAndOnsets = new ArrayList<>(); 
-			for (int j = 0; j < mtl.size(); j++) {
-//				System.out.println(mtl.get(i));
-				Marker mk = mtl.get(j);
-				if (mk instanceof TimeSignatureMarker) {
-					TimeSignatureMarker tsm = (TimeSignatureMarker) mk;
-					TimeSignature ts = tsm.getTimeSignature();
-					Rational tsRat = new Rational(ts.getNumerator(), ts.getDenominator());
-					Rational mtRat = mk.getMetricTime();
-					if (!ToolBox.getItemsAtIndex(timeSigAndOnsets, 1).contains(mtRat)) {
-						timeSigAndOnsets.add(new Rational[]{new Rational(ts.getNumerator(), ts.getDenominator()), mtRat});
-					}
-				}
-//				if (!onsets.contains(mtl.get(i).getMetricTime())) {
-//					onsets.add(mtl.get(i).getMetricTime());
+				new Transcription(new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION), 
+				null, tab.getTimeline().getMeterInfo());
+//			MIDIExport.exportMidiFile(model.getPiece(), Arrays.asList(new Integer[]{MIDIExport.GUITAR}), path + "5253_02-2.mid");
+//			System.exit(0); // HIERRR
+			
+//			MetricalTimeLine mtl = model.getPiece().getMetricalTimeLine(); 
+//			List<Rational[]> timeSigAndOnsets = new ArrayList<>(); 
+//			for (int j = 0; j < mtl.size(); j++) {
+////				System.out.println(mtl.get(i));
+//				Marker mk = mtl.get(j);
+//				if (mk instanceof TimeSignatureMarker) {
+//					TimeSignatureMarker tsm = (TimeSignatureMarker) mk;
+//					TimeSignature ts = tsm.getTimeSignature();
+//					Rational tsRat = new Rational(ts.getNumerator(), ts.getDenominator());
+//					Rational mtRat = mk.getMetricTime();
+//					if (!ToolBox.getItemsAtIndex(timeSigAndOnsets, 1).contains(mtRat)) {
+//						timeSigAndOnsets.add(new Rational[]{new Rational(ts.getNumerator(), ts.getDenominator()), mtRat});
+//					}
 //				}
-			}
-			for (Rational[] r : timeSigAndOnsets) {
-				System.out.println(Arrays.asList(r));
-			}
-//			System.exit(0);
+////				if (!onsets.contains(mtl.get(i).getMetricTime())) {
+////					onsets.add(mtl.get(i).getMetricTime());
+////				}
+//			}
+//			for (Rational[] r : timeSigAndOnsets) {
+//				System.out.println(Arrays.asList(r));
+//			}
+
 			models.add(model.getNumberOfNotes());
 			modelsBnp.add(model.getBasicNoteProperties().length);
 			// If necessary: adapt maximum number of voices 
@@ -335,7 +343,8 @@ public class TabMapper {
 			// With full durations 
 			if (addDuration) {
 				List<Integer> dims = 
-					ToolBox.getItemsAtIndex(tab.getTimeline().getMeterInfo(), 
+//					ToolBox.getItemsAtIndex(tab.getTimeline().getMeterInfoOBS(), 
+					ToolBox.getItemsAtIndex(tab.getTimeline().getMeterInfo(), 		
 					Timeline.MI_DIM);
 				Rational maxDur = dims.get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
 //				Rational maxDur = tab.getDiminutions().get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
@@ -426,6 +435,7 @@ public class TabMapper {
 
 		// Get meter information
 		List<Integer[]> meterInfo = tab.getTimeline().getMeterInfo();
+//		List<Integer[]> meterInfo = tab.getTimeline().getMeterInfoOBS();
 //-*-		System.out.println("meterInfo");
 //-*-		meterInfo.forEach(in -> System.out.println(Arrays.toString(in)));
 
@@ -941,7 +951,8 @@ public class TabMapper {
 			Rational onsetFracActual = allOnsetTimes.get(i)[0];
 			Rational onsetFracRounded = allOnsetTimes.get(i)[1];
 			grid[i][BAR_IND] = 
-				Timeline.getMetricPosition(onsetFracActual, 
+				Timeline.getMetricPosition(onsetFracActual,
+//				tab.getTimeline().getMeterInfoOBS())[0].getNumer();
 				tab.getTimeline().getMeterInfo())[0].getNumer();
 
 			// Set onset, using the rounded value (which is only different from the actual 
@@ -972,6 +983,7 @@ public class TabMapper {
 			Rational onsetFrac = allOnsetTimes.get(i)[1];
 			mask[i][BAR_IND] = 
 				Timeline.getMetricPosition(onsetFrac, 
+//				tab.getTimeline().getMeterInfoOBS())[0].getNumer();
 				tab.getTimeline().getMeterInfo())[0].getNumer();
 			mask[i][ONSET_IND] = onsetFrac.mul(smallestDur).getNumer(); // denominator is always 1 because of multiplication with smallest rhythmic value	
 		}
@@ -980,6 +992,7 @@ public class TabMapper {
 			int onset = btp[i][Tablature.ONSET_TIME];
 			Rational[] posInBar = 
 				Timeline.getMetricPosition(new Rational(onset, smallestDur), 
+//				tab.getTimeline().getMeterInfoOBS());
 				tab.getTimeline().getMeterInfo());
 //			int bar = posInBar[0].getNumer();
 //			Rational pos = posInBar[1];
@@ -1903,7 +1916,7 @@ public class TabMapper {
 			
 			// JosquIntab
 			// a. Mass sections
-//			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
+			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
 //			new String[]{"5266_15_cum_sancto_spiritu_desprez", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
 //			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-1", "Jos0303c-Missa_De_beata_virgine-Credo-1-102"},
 			// JEP (has imprecise triplet onset(s))		
@@ -1962,7 +1975,7 @@ public class TabMapper {
 //			new String[]{"5252_01_pater_noster_desprez-2", "Jos2009-Pater_noster-121-198"},
 //			new String[]{"3649_072_praeter_rerum_seriem_josquin_T", "Jos2411-Preter_rerum_seriem-1-87"},		
 //			new String[]{"5253_02_praeter_rerum_seriem_desprez-1", "Jos2411-Preter_rerum_seriem-1-87"},
-			new String[]{"5253_02_praeter_rerum_seriem_desprez-2", "Jos2411-Preter_rerum_seriem-88-185"},
+//			new String[]{"5253_02_praeter_rerum_seriem_desprez-2", "Jos2411-Preter_rerum_seriem-88-185"},
 //			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-1", "Jos2411-Preter_rerum_seriem-1-87"},
 //			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-2", "Jos2411-Preter_rerum_seriem-88-185"},	
 //			new String[]{"1274_12_qui_habitat_in_adjutorio-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
