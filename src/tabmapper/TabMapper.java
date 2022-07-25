@@ -151,9 +151,9 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
 //		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
-		path = "F:/research/data/annotated/josquintab/";
+//		path = "F:/research/data/annotated/josquintab/";
 //		path = "C:/Users/Reinier/Desktop/test-capirola/";
-//		path = "C:/Users/Reinier/Desktop/tabmapper/";
+		path = "C:/Users/Reinier/Desktop/tabmapper/";
 		
 
 		boolean includeOrn = true;
@@ -1916,7 +1916,7 @@ public class TabMapper {
 			
 			// JosquIntab
 			// a. Mass sections
-			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
+//			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
 //			new String[]{"5266_15_cum_sancto_spiritu_desprez", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
 //			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-1", "Jos0303c-Missa_De_beata_virgine-Credo-1-102"},
 			// JEP (has imprecise triplet onset(s))		
@@ -1995,7 +1995,7 @@ public class TabMapper {
 //			new String[]{"4481_49_ach_unfal_wes_zeigst_du_mich", "Jos2829-Qui_belles_amours"},
 //			new String[] {"4406_51_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
 //			new String[] {"4467_37_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
-//			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},	
+			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},	
 //			new String[] {"1030_coment_peult_avoir_joye", "Jos2807-Comment_peult_avoir_joye"},
 //			new String[] {"1275_13_faulte_d_argent", "Jos2907-Faulte_dargent"},
 //			new String[] {"3638_061_lauda_sion_gombert_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
