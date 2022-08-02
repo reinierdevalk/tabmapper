@@ -151,9 +151,9 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
 //		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
-//		path = "F:/research/data/annotated/josquintab/";
+		path = "F:/research/data/annotated/josquintab/";
 //		path = "C:/Users/Reinier/Desktop/test-capirola/";
-		path = "C:/Users/Reinier/Desktop/tabmapper/";
+//		path = "C:/Users/Reinier/Desktop/tabmapper/";
 		
 
 		boolean includeOrn = true;
@@ -443,16 +443,17 @@ public class TabMapper {
 		// 3/1, 2/1: beat level is W; two levels below is Q
 		// 3/2, 2/2: beat level is H; two levels below is E
 		int ornThreshold = -1;
-		if (meterInfo.get(0)[Timeline.MI_DEN] == 2) {
-			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // *3 trp dur
-		}
-		else if (meterInfo.get(0)[Timeline.MI_DEN] == 1) {
-			ornThreshold = (Transcription.QUARTER.indexOf(1.0) + 1)*3; // *3 trp dur
-		}
-		else if (meterInfo.get(0)[Timeline.MI_NUM] == 4 && 
-			meterInfo.get(0)[Timeline.MI_DEN] == 4) { // TODO
-			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // * 3 trp dur
-		}
+		ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // *3 trp dur
+//		if (meterInfo.get(0)[Timeline.MI_DEN] == 2) {
+//			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // *3 trp dur
+//		}
+//		else if (meterInfo.get(0)[Timeline.MI_DEN] == 1) {
+//			ornThreshold = (Transcription.QUARTER.indexOf(1.0) + 1)*3; // *3 trp dur
+//		}
+//		else if (meterInfo.get(0)[Timeline.MI_NUM] == 4 && 
+//			meterInfo.get(0)[Timeline.MI_DEN] == 4) {
+//			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // * 3 trp dur
+//		}
 
 		List<Integer[][]> gridAndMask = makeGridAndMask(trans, tab);
 		Integer[][] grid = gridAndMask.get(0);
@@ -1916,8 +1917,8 @@ public class TabMapper {
 			
 			// JosquIntab
 			// a. Mass sections
-//			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
-//			new String[]{"5266_15_cum_sancto_spiritu_desprez", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"},
+//			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"}, // tab bar:metric bar 3:2
+//			new String[]{"5266_15_cum_sancto_spiritu_desprez", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"}, // tab bar:metric bar 3:2
 //			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-1", "Jos0303c-Missa_De_beata_virgine-Credo-1-102"},
 			// JEP (has imprecise triplet onset(s))		
 //			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-2", "Jos0303c-Missa_De_beata_virgine-Credo-103-159"},
@@ -1947,7 +1948,7 @@ public class TabMapper {
 //			new String[]{"4965_01b_per_illud_ave_josquin", "Jos2313-Benedicta_es_celorum-108-135"},
 //			new String[]{"4966_01c_nunc_mater_josquin", "Jos2313-Benedicta_es_celorum-136-176"},
 			// JEP (has imprecise triplet onset(s))
-//			new String[]{"5254_03_benedicta_es_coelorum_desprez-1", "Jos2313-Benedicta_es_celorum-1-107"},
+//			new String[]{"5254_03_benedicta_es_coelorum_desprez-1", "Jos2313-Benedicta_es_celorum-1-107"}, // check triplets in tab 
 //			new String[]{"5254_03_benedicta_es_coelorum_desprez-2", "Jos2313-Benedicta_es_celorum-108-135"},
 //			new String[]{"5254_03_benedicta_es_coelorum_desprez-3", "Jos2313-Benedicta_es_celorum-136-176"},
 			// TODO 0, 1, 32, 33, 36, 38	
@@ -1960,7 +1961,7 @@ public class TabMapper {
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-1", "Jos1704-In_exitu_Israel_de_Egypto-1-143"},
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-2", "Jos1704-In_exitu_Israel_de_Egypto-144-280"},
 			// JEP (has imprecise triplet onset(s))
-//			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
+//fuk			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
 //			new String[]{"5256_05_inviolata_integra_desprez-1", "Jos2404-Inviolata_integra_et_casta_es-1-63"},
 			// JEP (has imprecise triplet onset(s))
 //			new String[]{"5256_05_inviolata_integra_desprez-2", "Jos2404-Inviolata_integra_et_casta_es-64-105"},
@@ -1973,7 +1974,7 @@ public class TabMapper {
 //			new String[]{"932_milano_108_pater_noster_josquin-2", "Jos2009-Pater_noster-121-198"},
 //			new String[]{"5252_01_pater_noster_desprez-1", "Jos2009-Pater_noster-1-120"},	
 //			new String[]{"5252_01_pater_noster_desprez-2", "Jos2009-Pater_noster-121-198"},
-//			new String[]{"3649_072_praeter_rerum_seriem_josquin_T", "Jos2411-Preter_rerum_seriem-1-87"},		
+			new String[]{"3649_072_praeter_rerum_seriem_josquin_T", "Jos2411-Preter_rerum_seriem-1-87"},		
 //			new String[]{"5253_02_praeter_rerum_seriem_desprez-1", "Jos2411-Preter_rerum_seriem-1-87"},
 //			new String[]{"5253_02_praeter_rerum_seriem_desprez-2", "Jos2411-Preter_rerum_seriem-88-185"},
 //			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-1", "Jos2411-Preter_rerum_seriem-1-87"},
@@ -1991,11 +1992,11 @@ public class TabMapper {
 //			new String[]{"5255_04_stabat_mater_dolorosa_desprez-2", "Jos2509-Stabat_mater__Comme_femme-89-180"},
 
 			// c. Chansons
-//			new String[]{"4400_45_ach_unfall_was", "Jos2829-Qui_belles_amours"},
-//			new String[]{"4481_49_ach_unfal_wes_zeigst_du_mich", "Jos2829-Qui_belles_amours"},
+//			new String[]{"4400_45_ach_unfall_was", "Jos2829-Qui_belles_amours"}, // barring messed up due to correction in bar 2 
+//			new String[]{"4481_49_ach_unfal_wes_zeigst_du_mich", "Jos2829-Qui_belles_amours"}, // barring messed up due to correction in bar 2
 //			new String[] {"4406_51_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
 //			new String[] {"4467_37_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
-			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},	
+//			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},	
 //			new String[] {"1030_coment_peult_avoir_joye", "Jos2807-Comment_peult_avoir_joye"},
 //			new String[] {"1275_13_faulte_d_argent", "Jos2907-Faulte_dargent"},
 //			new String[] {"3638_061_lauda_sion_gombert_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
