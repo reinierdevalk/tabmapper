@@ -158,7 +158,7 @@ public class TabMapper {
 
 		boolean includeOrn = true;
 		Connection connection = Connection.RIGHT;
-		boolean grandStaff = true;
+		boolean grandStaff = false;
 		boolean tabOnTop = true;
 		boolean alignWithMetricBarring = true;
 		boolean addDuration = false;
@@ -244,7 +244,7 @@ public class TabMapper {
 
 			Transcription model = 
 				new Transcription(new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION), 
-				null, tab.getTimeline().getMeterInfo());
+				null, tab.getTimeline());
 //			MIDIExport.exportMidiFile(model.getPiece(), Arrays.asList(new Integer[]{MIDIExport.GUITAR}), path + "5253_02-2.mid");
 //			System.exit(0); // HIERRR
 			
@@ -1961,7 +1961,7 @@ public class TabMapper {
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-1", "Jos1704-In_exitu_Israel_de_Egypto-1-143"},
 //			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-2", "Jos1704-In_exitu_Israel_de_Egypto-144-280"},
 			// JEP (has imprecise triplet onset(s))
-			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
+//hier			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
 //			new String[]{"5256_05_inviolata_integra_desprez-1", "Jos2404-Inviolata_integra_et_casta_es-1-63"},
 			// JEP (has imprecise triplet onset(s))
 //			new String[]{"5256_05_inviolata_integra_desprez-2", "Jos2404-Inviolata_integra_et_casta_es-64-105"},
@@ -1969,7 +1969,7 @@ public class TabMapper {
 //			new String[]{"5256_05_inviolata_integra_desprez-3", "Jos2404-Inviolata_integra_et_casta_es-106-144"},
 //			new String[]{"4465_33-34_memor_esto-1", "Jos1714-Memor_esto_verbi_tui-1-165"},
 			// JEP (has imprecise triplet onset(s))
-//fuk			new String[]{"4465_33-34_memor_esto-2", "Jos1714-Memor_esto_verbi_tui-166-325"},
+//hier			new String[]{"4465_33-34_memor_esto-2", "Jos1714-Memor_esto_verbi_tui-166-325"},
 //			new String[]{"932_milano_108_pater_noster_josquin-1", "Jos2009-Pater_noster-1-120"},
 //			new String[]{"932_milano_108_pater_noster_josquin-2", "Jos2009-Pater_noster-121-198"},
 //			new String[]{"5252_01_pater_noster_desprez-1", "Jos2009-Pater_noster-1-120"},	
@@ -1996,7 +1996,7 @@ public class TabMapper {
 //			new String[]{"4481_49_ach_unfal_wes_zeigst_du_mich", "Jos2829-Qui_belles_amours"}, // barring messed up due to correction in bar 2
 //			new String[] {"4406_51_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
 //			new String[] {"4467_37_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
-//			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},	
+			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},	
 //			new String[] {"1030_coment_peult_avoir_joye", "Jos2807-Comment_peult_avoir_joye"},
 //			new String[] {"1275_13_faulte_d_argent", "Jos2907-Faulte_dargent"},
 //			new String[] {"3638_061_lauda_sion_gombert_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
