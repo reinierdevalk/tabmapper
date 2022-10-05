@@ -16,10 +16,6 @@ import de.uos.fmt.musitech.data.score.NotationSystem;
 import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.data.structure.Piece;
-import de.uos.fmt.musitech.data.time.Marker;
-import de.uos.fmt.musitech.data.time.MetricalTimeLine;
-import de.uos.fmt.musitech.data.time.TimeSignature;
-import de.uos.fmt.musitech.data.time.TimeSignatureMarker;
 import de.uos.fmt.musitech.utility.math.Rational;
 import exports.MEIExport;
 import exports.MIDIExport;
@@ -156,12 +152,12 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/tabmapper/";
 		
 
-		boolean includeOrn = true;
+		boolean includeOrn = true; // YES
 		Connection connection = Connection.RIGHT;
-		boolean grandStaff = false;
-		boolean tabOnTop = true;
+		boolean grandStaff = true; // YES
+		boolean tabOnTop = true; // YES
 		boolean alignWithMetricBarring = true;
-		boolean addDuration = false;
+		boolean addDuration = false; // YES
 		List<String[]> pieces = getPieces();
 		List<String> skip = getPiecesToSkip();
 
@@ -188,18 +184,26 @@ public class TabMapper {
 
 		if (args.length > 0) {
 			// Path
-			path = args[0];
+			path = args[args.length-2];
 			if (!path.endsWith("/")) {
 				path += "/";
 			}
 			MEIExport.setRootDir(path);
-			MEIExport.MEITemplatePath = path;
+			// Uncomment if the template.xml file is placed in the same dir as pieces.csv (args[1])
+//			MEIExport.MEITemplatePath = path; 
+			
+			System.out.println(path);
+			
 			// Pieces
 			pieces = new ArrayList<>();
-			for (String line : ToolBox.readTextFile(new File(path + args[1])).split("\r\n")) {
+			for (String line : ToolBox.readTextFile(new File(path + args[args.length-1])).split("\r\n")) {
 				String[] split = line.split(",");
 				pieces.add(new String[]{split[0].strip(), split[1].strip()});
 			}
+			for (String[] s : pieces) {
+				System.out.println(s[0] + ", " + s[1]);
+			}
+			
 			// Ornamentation
 //-**-			if (args.length == 3) {
 //-**-				String opt = args[2]; 
@@ -212,14 +216,87 @@ public class TabMapper {
 //-**-			}
 			// Options: add ornamentation, add duration, grand staff (each Y/N)
 			if (args.length > 2) {
-				String opt = args[3];
-				String orn = opt.substring(0, 1);
-				String dur = opt.substring(1, 2);
-				String gs = opt.substring(2, 3);
-				includeOrn = (orn.contains("y") || orn.contains("Y")) ? true : false;
-				addDuration = (dur.contains("y") || dur.contains("Y")) ? true : false;
-				grandStaff = (gs.contains("y") || gs.contains("Y")) ? true : false;
+//				String opt = args[2];
+//				String orn = opt.substring(0, 1);
+//				String dur = opt.substring(1, 2);
+//				String gs = opt.substring(2, 3);
+//				includeOrn = (orn.contains("y") || orn.contains("Y")) ? true : false;
+//				addDuration = (dur.contains("y") || dur.contains("Y")) ? true : false;
+//				grandStaff = (gs.contains("y") || gs.contains("Y")) ? true : false;
+				
+				// Default settings
+				tabOnTop = true;
+				grandStaff = true;
+				includeOrn = true;
+				addDuration = false;
+//				System.out.println(Arrays.asList(args));
+				// Last two args are positional args (path to data and list of pieces);
+				// any preceding args are option flags, diverging from the default: 
+				// -b (positions tab at bottom)
+				// -s (score instead of grand staff)
+				// -o (removes ornamentation)
+				// -d (adds duration)
+				String[] opts = Arrays.copyOfRange(args, 0, args.length-2);
+//				System.out.println(Arrays.asList(opts));
+				// Combined flags
+				if (opts.length == 1) {
+					String choice = opts[0];
+					if (choice.contains("b")) {
+						tabOnTop = false;
+					}
+					if (choice.contains("s")) {
+						grandStaff = false;
+					}
+					if (choice.contains("o")) {
+						includeOrn = false;
+					}
+					if (choice.contains("d")) {
+						addDuration = true;
+					}
+				}
+//				else {
+//					for (String o : opts) {
+//						String choice = o.substring(o.indexOf("=")+1, o.length());
+//						if (o.startsWith("-p")) { 
+//							if (choice.equals("top")) {
+//								tabOnTop = true;
+//							}
+//							else {
+//								tabOnTop = false;
+//							}
+//						}
+//						else if (o.startsWith("-s")) {
+//							if (choice.equals("staff")) {
+//								grandStaff = true;
+//							}
+//							else {
+//								grandStaff = false;
+//							}
+//						}
+//						else if (o.startsWith("-o")) {
+//							if (choice.equals("yes") || choice.equals("y")) {
+//								includeOrn = true;
+//							}
+//							else {
+//								includeOrn = false;
+//							}
+//						}
+//						else if (o.startsWith("-d")) {
+//							if (choice.equals("yes") || choice.equals("y")) {
+//								addDuration = true;
+//							}
+//							else {
+//								addDuration = false;
+//							}
+//						}
+//					}
+//				}
 			}
+//			System.out.println(tabOnTop);
+//			System.out.println(grandStaff);
+//			System.out.println(includeOrn);
+//			System.out.println(addDuration);
+//			System.exit(0);
 		}
 
 		// Map each piece in pieces
@@ -1969,7 +2046,7 @@ public class TabMapper {
 //			new String[]{"5256_05_inviolata_integra_desprez-3", "Jos2404-Inviolata_integra_et_casta_es-106-144"},
 //			new String[]{"4465_33-34_memor_esto-1", "Jos1714-Memor_esto_verbi_tui-1-165"},
 			// JEP (has imprecise triplet onset(s))
-			new String[]{"4465_33-34_memor_esto-2", "Jos1714-Memor_esto_verbi_tui-166-325"},
+//hier			new String[]{"4465_33-34_memor_esto-2", "Jos1714-Memor_esto_verbi_tui-166-325"},
 //			new String[]{"932_milano_108_pater_noster_josquin-1", "Jos2009-Pater_noster-1-120"},
 //			new String[]{"932_milano_108_pater_noster_josquin-2", "Jos2009-Pater_noster-121-198"},
 //			new String[]{"5252_01_pater_noster_desprez-1", "Jos2009-Pater_noster-1-120"},	
@@ -1996,7 +2073,7 @@ public class TabMapper {
 //			new String[]{"4481_49_ach_unfal_wes_zeigst_du_mich", "Jos2829-Qui_belles_amours"}, // barring messed up due to correction in bar 2
 //			new String[] {"4406_51_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
 //			new String[] {"4467_37_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
-//			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},	
+			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},	
 //			new String[] {"1030_coment_peult_avoir_joye", "Jos2807-Comment_peult_avoir_joye"},
 //			new String[] {"1275_13_faulte_d_argent", "Jos2907-Faulte_dargent"},
 //			new String[] {"3638_061_lauda_sion_gombert_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
