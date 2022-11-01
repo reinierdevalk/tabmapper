@@ -353,7 +353,7 @@ public class TabMapper {
 			if (model.getNumberOfVoices() == 6) {
 				Transcription.setMaximumNumberOfVoices(6);
 			}
-			if (Transcription.MAXIMUM_NUMBER_OF_VOICES == 6 && model.getNumberOfVoices() < 6) {
+			if (Transcription.MAX_NUM_VOICES == 6 && model.getNumberOfVoices() < 6) {
 				Transcription.setMaximumNumberOfVoices(5);
 			}
 
