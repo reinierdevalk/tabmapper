@@ -351,10 +351,10 @@ public class TabMapper {
 			modelsBnp.add(model.getBasicNoteProperties().length);
 			// If necessary: adapt maximum number of voices 
 			if (model.getNumberOfVoices() == 6) {
-				Transcription.setMaximumNumberOfVoices(6);
+				Transcription.setMaxNumVoices(6);
 			}
 			if (Transcription.MAX_NUM_VOICES == 6 && model.getNumberOfVoices() < 6) {
-				Transcription.setMaximumNumberOfVoices(5);
+				Transcription.setMaxNumVoices(5);
 			}
 
 			Integer[][] btp = tab.getBasicTabSymbolProperties();
@@ -1389,7 +1389,7 @@ public class TabMapper {
 				){ // the part after the && is to prevent unnecessary iterations
 				if (prevPitches != null && prevPitches.size() == pitchesTab.size()) {
 					isConsecutiveTupletChord = true;
-					System.out.println("isConsecutiveTupletChord in " + trans.getPieceName());
+					System.out.println("isConsecutiveTupletChord in " + trans.getName());
 				}
 
 				for (int j = 0; j < mappedVoices.size(); j++) {
