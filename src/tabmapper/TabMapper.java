@@ -321,7 +321,7 @@ public class TabMapper {
 
 			Transcription model = 
 				new Transcription(new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION), 
-				null, tab.getTimeline());
+				new File(path + "tab/" + tabName + Encoding.EXTENSION), tab.getTimeline());
 //			MIDIExport.exportMidiFile(model.getPiece(), Arrays.asList(new Integer[]{MIDIExport.GUITAR}), path + "5253_02-2.mid");
 //			System.exit(0); // HIERRR
 			
@@ -400,7 +400,8 @@ public class TabMapper {
 			// (used to visualise the mismatches)
 			Piece p = Transcription.createPiece(
 				btp, null, voiceLabels, null, model.getNumberOfVoices(), 
-				model.getPiece().getMetricalTimeLine(), model.getPiece().getHarmonyTrack());
+				model.getPiece().getMetricalTimeLine(), model.getPiece().getHarmonyTrack(),
+				model.getPiece().getName());
 			List<Integer> instruments = Arrays.asList(new Integer[]{MIDIExport.GUITAR});
 			// Without full durations
 			if (!addDuration) {
