@@ -407,7 +407,8 @@ public class TabMapper {
 			if (!addDuration) {
 				// MIDI 
 				File f = new File(path + "mapped/" + tabName + MIDIImport.EXTENSION);
-				MIDIExport.exportMidiFile(p, instruments, f.getAbsolutePath());
+				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
+					f.getAbsolutePath()); // 05.12 added meterInfo and keyInfo
 				// MEI 
 				Transcription trans = new Transcription(f, null);
 				trans.setColourIndices(mismatchInds);
@@ -430,7 +431,8 @@ public class TabMapper {
 				p = Transcription.completeDurations(p, maxDur);
 				// MIDI
 				File fDur = new File(path + "mapped/"+ tabName + "-dur.mid");
-				MIDIExport.exportMidiFile(p, instruments, fDur.getAbsolutePath());
+				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
+					fDur.getAbsolutePath()); // 05.12 added meterInfo and keyInfo
 				// MEI
 				Transcription transDur = new Transcription(fDur, null);
 				transDur.setColourIndices(mismatchInds);
@@ -506,8 +508,9 @@ public class TabMapper {
 		List<Double> emptyVoiceLabel = makeEmptyVoiceLabel(numVoices);
 		
 		// Get key information. Assume one key for the whole piece
-		List<Integer[]> keyInfo = 
-			Transcription.createKeyInfo(trans.getPiece(), Transcription.createMeterInfo(trans.getPiece()));
+		List<Integer[]> keyInfo = trans.getKeyInfo();
+//		List<Integer[]> keyInfo = 
+//			Transcription.createKeyInfo(trans.getPiece(), Transcription.createMeterInfo(trans.getPiece()));
 //-*-		System.out.println("keyInfo");
 //-*-		keyInfo.forEach(in -> System.out.println(Arrays.toString(in)));
 
