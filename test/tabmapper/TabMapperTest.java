@@ -157,7 +157,7 @@ public class TabMapperTest extends TestCase {
 
 
 	public void testGetLastPitchInVoices() {
-		Transcription trans = new Transcription(midiTestpiece, null);
+		Transcription trans = new Transcription(midiTestpiece);
 		List<Integer> availableVoices = Arrays.asList(new Integer[]{0, 1, 4});
 		List<Rational> onsets = Arrays.asList(new Rational[]{
 			new Rational(3, 4), 

@@ -24,6 +24,7 @@ import representations.Tablature;
 import representations.Transcription;
 import structure.Timeline;
 import tbp.Encoding;
+import tbp.RhythmSymbol;
 import tools.ToolBox;
 import utility.DataConverter;
 
@@ -321,7 +322,7 @@ public class TabMapper {
 
 			Transcription model = 
 				new Transcription(new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION), 
-				new File(path + "tab/" + tabName + Encoding.EXTENSION), tab.getTimeline());
+				/*new File(path + "tab/" + tabName + Encoding.EXTENSION),*/ tab.getTimeline());
 //			MIDIExport.exportMidiFile(model.getPiece(), Arrays.asList(new Integer[]{MIDIExport.GUITAR}), path + "5253_02-2.mid");
 //			System.exit(0); // HIERRR
 			
@@ -410,8 +411,8 @@ public class TabMapper {
 				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
 					f.getAbsolutePath()); // 05.12 added meterInfo and keyInfo
 				// MEI 
-				Transcription trans = new Transcription(f, null);
-				trans.setColourIndices(mismatchInds);
+				Transcription trans = new Transcription(f);
+//				trans.setColourIndices(mismatchInds);
 //				List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(trans, tab, /*btp, trans.getKeyInfo(),
@@ -434,8 +435,8 @@ public class TabMapper {
 				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
 					fDur.getAbsolutePath()); // 05.12 added meterInfo and keyInfo
 				// MEI
-				Transcription transDur = new Transcription(fDur, null);
-				transDur.setColourIndices(mismatchInds);
+				Transcription transDur = new Transcription(fDur);
+//				transDur.setColourIndices(mismatchInds);
 //				List<Integer[]> mi = (tab == null) ? transDur.getMeterInfo() : tab.getMeterInfo();
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(transDur, tab, /*btp, transDur.getKeyInfo(),
@@ -524,7 +525,10 @@ public class TabMapper {
 		// 3/1, 2/1: beat level is W; two levels below is Q
 		// 3/2, 2/2: beat level is H; two levels below is E
 		int ornThreshold = -1;
-		ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // *3 trp dur
+//		List<Double> eighth = Transcription.createDurationLabel(new Integer[]{4*3});
+//		ornThreshold = (eighth.indexOf(1.0) + 1)*3; // *3 trp dur
+		ornThreshold = RhythmSymbol.SEMIMINIM.getDuration();
+		
 //		if (meterInfo.get(0)[Timeline.MI_DEN] == 2) {
 //			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // *3 trp dur
 //		}
