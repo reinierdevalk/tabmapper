@@ -151,12 +151,13 @@ public class TabMapper {
 		path = "F:/research/data/annotated/josquintab/";
 //		path = "C:/Users/Reinier/Desktop/test-capirola/";
 //		path = "C:/Users/Reinier/Desktop/tabmapper/";
+		path = "C:/Users/Reinier/Desktop/luteconv_v1.4.7/";
 		
 
 		boolean includeOrn = true; // YES
 		Connection connection = Connection.RIGHT;
 		boolean grandStaff = true; // YES
-		boolean tabOnTop = true; // YES
+		boolean tabOnTop = false; // YES
 		boolean alignWithMetricBarring = true;
 		boolean addDuration = false; // YES
 		List<String[]> pieces = getPieces();
@@ -518,17 +519,23 @@ public class TabMapper {
 		// Get meter information
 		List<Integer[]> meterInfo = tab.getTimeline().getMeterInfo();
 //		List<Integer[]> meterInfo = tab.getTimeline().getMeterInfoOBS();
-//-*-		System.out.println("meterInfo");
-//-*-		meterInfo.forEach(in -> System.out.println(Arrays.toString(in)));
+//		System.out.println("meterInfo");
+//		meterInfo.forEach(in -> System.out.println(Arrays.toString(in)));
 
-		// Set ornamentation threshold to the note value two levels below beat-level 
-		// 3/1, 2/1: beat level is W; two levels below is Q
-		// 3/2, 2/2: beat level is H; two levels below is E
-		int ornThreshold = -1;
+		// Set ornamentation threshold to the duration value two levels below beat level
+		// n/1: beat level is W; two levels below is Q (RhythmSymbol.MINIM = 24)
+		// n/2: beat level is H; two levels below is E (RhythmSymbol.SEMIMINIM = 12)
+		// n/4: beat level is Q; two levels below is S (RhythmSymbol.FUSA = 6)
+		// n/8: beat level is E; two levels below is T (RhythmSymbol.SEMIFUSA = 3)
+		
+//		int ornThreshold = -1;
 //		List<Double> eighth = Transcription.createDurationLabel(new Integer[]{4*3});
 //		ornThreshold = (eighth.indexOf(1.0) + 1)*3; // *3 trp dur
-		ornThreshold = RhythmSymbol.SEMIMINIM.getDuration();
-		
+//		ornThreshold = RhythmSymbol.SEMIMINIM.getDuration();
+//		ornThreshold = RhythmSymbol.MINIM.getDuration();
+		int ornThreshold = RhythmSymbol.MINIM.getDuration() / meterInfo.get(0)[Timeline.MI_DEN];
+		System.out.println(ornThreshold);
+		System.exit(0);
 //		if (meterInfo.get(0)[Timeline.MI_DEN] == 2) {
 //			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // *3 trp dur
 //		}
@@ -2081,7 +2088,7 @@ public class TabMapper {
 //			new String[]{"4481_49_ach_unfal_wes_zeigst_du_mich", "Jos2829-Qui_belles_amours"}, // barring messed up due to correction in bar 2
 //			new String[] {"4406_51_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
 //			new String[] {"4467_37_adieu_mes_amours", "Jos2803-Adieu_mes_amours"},
-			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},	
+//			new String[] {"1025_adieu_mes_amours", "Jos2803-Adieu_mes_amours-anacrusis"},	
 //			new String[] {"1030_coment_peult_avoir_joye", "Jos2807-Comment_peult_avoir_joye"},
 //			new String[] {"1275_13_faulte_d_argent", "Jos2907-Faulte_dargent"},
 //			new String[] {"3638_061_lauda_sion_gombert_T", "Jos2911-Je_ne_me_puis_tenir_daimer"},
@@ -2094,6 +2101,9 @@ public class TabMapper {
 //			new String[] {"4482_50_mille_regrets_P", "Jos2825-Mille_regretz"},
 //			new String[] {"4469_39_plus_nulz_regrets_P", "Jos2828-Plus_nulz_regrets"},
 //			new String[] {"922_milano_098_que_voulez_vous_dire_de_moi", "Jos2832-Si_jay_perdu"},
+			
+			// Other
+			new String[] {"je_prens_en_gre-tab-rests", "je_prens_en_gre-SATB"},
 		});
 		return pieces;
 	}
