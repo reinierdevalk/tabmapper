@@ -535,7 +535,7 @@ public class TabMapper {
 //		ornThreshold = RhythmSymbol.MINIM.getDuration();
 		int ornThreshold = RhythmSymbol.MINIM.getDuration() / meterInfo.get(0)[Timeline.MI_DEN];
 		System.out.println(ornThreshold);
-		System.exit(0);
+		
 //		if (meterInfo.get(0)[Timeline.MI_DEN] == 2) {
 //			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // *3 trp dur
 //		}
