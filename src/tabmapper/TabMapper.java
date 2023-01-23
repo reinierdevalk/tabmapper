@@ -402,8 +402,8 @@ public class TabMapper {
 			// (used to visualise the mismatches)
 			Piece p = Transcription.createPiece(
 				btp, null, voiceLabels, null, model.getNumberOfVoices(), 
-				model.getPiece().getMetricalTimeLine(), model.getPiece().getHarmonyTrack(),
-				model.getPiece().getName());
+				model.getScorePiece().getMetricalTimeLine(), model.getScorePiece().getHarmonyTrack(),
+				model.getScorePiece().getName());
 			List<Integer> instruments = Arrays.asList(new Integer[]{MIDIExport.GUITAR});
 			// Without full durations
 			if (!addDuration) {
@@ -1035,7 +1035,7 @@ public class TabMapper {
 		ToolBox.sortByRational(allOnsetTimes, 1);
 
 		// Make grid; initialise with all values set to null  
-		NotationSystem score = trans.getPiece().getScore();
+		NotationSystem score = trans.getScorePiece().getScore();
 		int numVoices = score.size();
 		Integer[][] grid = new Integer[allOnsetTimes.size()][(ONSET_IND + 1) + 2*numVoices];
 
@@ -1805,7 +1805,7 @@ public class TabMapper {
 	static List<Integer[]> getLastPitchInVoices(List<Integer> availableVoices, int numVoices,
 		Rational onset, Transcription trans) {
 		List<Integer[]> lastPitchInAvailableVoices = new ArrayList<>();
-		NotationSystem ns = trans.getPiece().getScore();
+		NotationSystem ns = trans.getScorePiece().getScore();
 		for (int j = numVoices - 1; j >= 0; j--) {
 			if (availableVoices.contains(j)) {
 				NotationVoice nv = ns.get(j).get(0);
