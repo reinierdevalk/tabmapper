@@ -22,7 +22,10 @@ import exports.MIDIExport;
 import imports.MIDIImport;
 import representations.Tablature;
 import representations.Transcription;
+import representations.Transcription.Type;
+import structure.ScorePiece;
 import structure.Timeline;
+import structure.metric.Utils;
 import tbp.Encoding;
 import tbp.RhythmSymbol;
 import tools.ToolBox;
@@ -322,8 +325,8 @@ public class TabMapper {
 //			}
 
 			Transcription model = 
-				new Transcription(new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION), 
-				/*new File(path + "tab/" + tabName + Encoding.EXTENSION),*/ tab.getTimeline());
+				new Transcription(Type.MAPPING, new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION), 
+				new File(path + "tab/" + tabName + Encoding.EXTENSION)); //,*/ tab.getEncoding().getTimeline());
 //			MIDIExport.exportMidiFile(model.getPiece(), Arrays.asList(new Integer[]{MIDIExport.GUITAR}), path + "5253_02-2.mid");
 //			System.exit(0); // HIERRR
 			
@@ -400,10 +403,13 @@ public class TabMapper {
 			ToolBox.storeTextFile(mappingDetailsCSV, new File(path + "mapped/" + tabName + "-mapping_details.csv"));
 			// b. As MIDI (used to create a GT transcription for training a model) and MEI
 			// (used to visualise the mismatches)
-			Piece p = Transcription.createPiece(
-				btp, null, voiceLabels, null, model.getNumberOfVoices(), 
-				model.getScorePiece().getMetricalTimeLine(), model.getScorePiece().getHarmonyTrack(),
-				model.getScorePiece().getName());
+			ScorePiece p = 
+				new ScorePiece(btp, null, voiceLabels, null, model.getScorePiece().getMetricalTimeLine(), 
+				model.getScorePiece().getHarmonyTrack(), model.getNumberOfVoices(), model.getScorePiece().getName());
+//			Piece p = 
+//				Transcription.createPiece(btp, null, voiceLabels, null, model.getNumberOfVoices(), 
+//				model.getScorePiece().getMetricalTimeLine(), model.getScorePiece().getHarmonyTrack(),
+//				model.getScorePiece().getName());
 			List<Integer> instruments = Arrays.asList(new Integer[]{MIDIExport.GUITAR});
 			// Without full durations
 			if (!addDuration) {
@@ -425,8 +431,8 @@ public class TabMapper {
 			if (addDuration) {
 				List<Integer> dims = 
 //					ToolBox.getItemsAtIndex(tab.getTimeline().getMeterInfoOBS(), 
-					ToolBox.getItemsAtIndex(tab.getTimeline().getMeterInfo(), 		
-					Timeline.MI_DIM);
+					ToolBox.getItemsAtIndex(tab.getMeterInfo(), 		
+					Tablature.MI_DIM);
 				Rational maxDur = dims.get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
 //				Rational maxDur = tab.getDiminutions().get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
 				
@@ -517,7 +523,8 @@ public class TabMapper {
 //-*-		keyInfo.forEach(in -> System.out.println(Arrays.toString(in)));
 
 		// Get meter information
-		List<Integer[]> meterInfo = tab.getTimeline().getMeterInfo();
+		Timeline tl = tab.getEncoding().getTimeline();
+		List<Integer[]> meterInfo = tab.getMeterInfo();
 //		List<Integer[]> meterInfo = tab.getTimeline().getMeterInfoOBS();
 //		System.out.println("meterInfo");
 //		meterInfo.forEach(in -> System.out.println(Arrays.toString(in)));
@@ -533,7 +540,7 @@ public class TabMapper {
 //		ornThreshold = (eighth.indexOf(1.0) + 1)*3; // *3 trp dur
 //		ornThreshold = RhythmSymbol.SEMIMINIM.getDuration();
 //		ornThreshold = RhythmSymbol.MINIM.getDuration();
-		int ornThreshold = RhythmSymbol.MINIM.getDuration() / meterInfo.get(0)[Timeline.MI_DEN];
+		int ornThreshold = RhythmSymbol.MINIM.getDuration() / meterInfo.get(0)[Transcription.MI_DEN];
 		System.out.println(ornThreshold);
 		
 //		if (meterInfo.get(0)[Timeline.MI_DEN] == 2) {
@@ -593,8 +600,10 @@ public class TabMapper {
 //					currMask[0] + " " + Tablature.getMetricPosition(new Rational(currMask[1], 
 //					SMALLEST_DUR), meterInfo)[1];
 				String bar = 
-					ToolBox.getMetricPositionAsString(Timeline.getMetricPosition(
-					new Rational(currMask[ONSET_IND], SMALLEST_DUR), meterInfo));
+					Utils.getMetricPositionAsString(
+					tl.getMetricPosition(currMask[ONSET_IND])
+//					Utils.getMetricPosition(new Rational(currMask[ONSET_IND], SMALLEST_DUR), meterInfo)
+				);
 
 				// Get pitches, arranged per voice (low-high), from GT
 				List<Integer> pitchesGT = 
@@ -696,8 +705,9 @@ public class TabMapper {
 						
 						res.append("no match for pitches " + pitchesNotInMIDIOriginal + " at indices " + 
 							indPitchesNotInMIDI + " (bar " + currMask[0] + "; onset " + 
-							Timeline.getMetricPosition(new Rational(currMask[ONSET_IND], SMALLEST_DUR), 
-							meterInfo)[1] + ")" + "\r\n");
+							tl.getMetricPosition(currMask[ONSET_IND])[1]	
+//							Utils.getMetricPosition(new Rational(currMask[ONSET_IND], SMALLEST_DUR), meterInfo)[1] 
+							+ ")" + "\r\n");
 						res.append("pitches in tab chord : " + pitchesTab + "\r\n");
 						res.append("cheapest mapping (total cost " + 
 							ToolBox.sumListInteger(ToolBox.getItemsAtIndex(cheapestMappingTotal, 2))+ 
@@ -792,9 +802,11 @@ public class TabMapper {
 									btp[ind][Tablature.CHORD_SEQ_NUM] + "," + 
 //									ornChMask[0] + " " + Tablature.getMetricPosition(
 //									new Rational(ornChMask[1], SMALLEST_DUR), meterInfo)[1] + "," +	
-									ToolBox.getMetricPositionAsString(Timeline.getMetricPosition(
-										new Rational(ornChMask[ONSET_IND], SMALLEST_DUR), meterInfo)) + "," +
-									closestVoice + "," + "n/a" + "," + "ornamentation");
+									Utils.getMetricPositionAsString(
+										tl.getMetricPosition(ornChMask[ONSET_IND])
+//										Utils.getMetricPosition(new Rational(ornChMask[ONSET_IND], SMALLEST_DUR), meterInfo)
+									) 
+									+ "," + closestVoice + "," + "n/a" + "," + "ornamentation");
 							}
 						}
 						currOrn.clear();
@@ -993,6 +1005,7 @@ public class TabMapper {
 	private static List<Integer[][]> makeGridAndMask(Transcription trans, Tablature tab) {
 		Integer[][] bnp = trans.getBasicNoteProperties();
 		Integer[][] btp = tab.getBasicTabSymbolProperties();
+		Timeline tl = tab.getEncoding().getTimeline();
 
 		// Determine smallest duration in MIDI (currently simply set to Tablature.SMALLEST_RHYTHMIC_VALUE)
 		int smallestDur = -1;
@@ -1044,9 +1057,8 @@ public class TabMapper {
 			Rational onsetFracActual = allOnsetTimes.get(i)[0];
 			Rational onsetFracRounded = allOnsetTimes.get(i)[1];
 			grid[i][BAR_IND] = 
-				Timeline.getMetricPosition(onsetFracActual,
-//				tab.getTimeline().getMeterInfoOBS())[0].getNumer();
-				tab.getTimeline().getMeterInfo())[0].getNumer();
+				tl.getMetricPosition((int) onsetFracActual.mul(Tablature.SRV_DEN).toDouble())[0].getNumer();
+//				Utils.getMetricPosition(onsetFracActual, tab.getMeterInfo())[0].getNumer();
 
 			// Set onset, using the rounded value (which is only different from the actual 
 			// value if rounding was actually necessary)
@@ -1075,18 +1087,17 @@ public class TabMapper {
 		for (int i = 0; i < allOnsetTimes.size(); i++) {
 			Rational onsetFrac = allOnsetTimes.get(i)[1];
 			mask[i][BAR_IND] = 
-				Timeline.getMetricPosition(onsetFrac, 
-//				tab.getTimeline().getMeterInfoOBS())[0].getNumer();
-				tab.getTimeline().getMeterInfo())[0].getNumer();
+				tl.getMetricPosition((int) onsetFrac.mul(Tablature.SRV_DEN).toDouble())[0].getNumer();
+//				Utils.getMetricPosition(onsetFrac, tab.getMeterInfo())[0].getNumer();
 			mask[i][ONSET_IND] = onsetFrac.mul(smallestDur).getNumer(); // denominator is always 1 because of multiplication with smallest rhythmic value	
 		}
 		// Set pitches and durations
 		for (int i = 0; i < btp.length; i++) {
 			int onset = btp[i][Tablature.ONSET_TIME];
 			Rational[] posInBar = 
-				Timeline.getMetricPosition(new Rational(onset, smallestDur), 
-//				tab.getTimeline().getMeterInfoOBS());
-				tab.getTimeline().getMeterInfo());
+				tl.getMetricPosition(onset);
+//				Utils.getMetricPosition(new Rational(onset, smallestDur), tab.getMeterInfo());
+
 //			int bar = posInBar[0].getNumer();
 //			Rational pos = posInBar[1];
 //			pos.reduce();
