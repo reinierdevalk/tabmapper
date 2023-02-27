@@ -162,7 +162,7 @@ public class TabMapper {
 		boolean grandStaff = true; // YES
 		boolean tabOnTop = false; // YES
 		boolean alignWithMetricBarring = true;
-		boolean addDuration = false; // YES
+		boolean completeDurations = false; // YES
 		List<String[]> pieces = getPieces();
 		List<String> skip = getPiecesToSkip();
 
@@ -233,7 +233,7 @@ public class TabMapper {
 				tabOnTop = true;
 				grandStaff = true;
 				includeOrn = true;
-				addDuration = false;
+				completeDurations = false;
 //				System.out.println(Arrays.asList(args));
 				// Last two args are positional args (path to data and list of pieces);
 				// any preceding args are option flags, diverging from the default: 
@@ -256,7 +256,7 @@ public class TabMapper {
 						includeOrn = false;
 					}
 					if (choice.contains("d")) {
-						addDuration = true;
+						completeDurations = true;
 					}
 				}
 //				else {
@@ -412,7 +412,7 @@ public class TabMapper {
 //				model.getScorePiece().getName());
 			List<Integer> instruments = Arrays.asList(new Integer[]{MIDIExport.GUITAR});
 			// Without full durations
-			if (!addDuration) {
+			if (!completeDurations) {
 				// MIDI 
 				File f = new File(path + "mapped/" + tabName + MIDIImport.EXTENSION);
 				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
@@ -428,7 +428,7 @@ public class TabMapper {
 				}
 			}
 			// With full durations 
-			if (addDuration) {
+			if (completeDurations) {
 				List<Integer> dims = 
 //					ToolBox.getItemsAtIndex(tab.getTimeline().getMeterInfoOBS(), 
 					ToolBox.getItemsAtIndex(tab.getMeterInfo(), 		
@@ -436,7 +436,8 @@ public class TabMapper {
 				Rational maxDur = dims.get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
 //				Rational maxDur = tab.getDiminutions().get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
 				
-				p = Transcription.completeDurations(p, maxDur);
+				p.completeDurations(maxDur);
+//				p = Transcription.completeDurations(p, maxDur);
 				// MIDI
 				File fDur = new File(path + "mapped/"+ tabName + "-dur.mid");
 				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
