@@ -1028,7 +1028,7 @@ public class TabMapper {
 		//               time rounded to the closest multiple of 1/SRV
 		List<Rational[]> allOnsetTimes = new ArrayList<>();
 		// a. Get all onset times in the Transcription
-		for (Rational r : trans.getAllOnsetTimes()) {
+		for (Rational r : trans.getMetricPositionsChords()) {
 			// If the onset is not a multiple of smallest dur, it is an imprecise triplet 
 			// onset that must rounded to the nearest triplet value
 			Rational rounded = r;
