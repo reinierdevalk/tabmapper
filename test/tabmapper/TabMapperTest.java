@@ -98,7 +98,7 @@ public class TabMapperTest extends TestCase {
 		expected8.add(Arrays.asList(new Integer[]{3, 2}));
 		expected.add(expected8);
 		
-		// d1 to chord 3 (equals distance to SNU of voices 1 and 0)
+		// d1 to chord 3 (equal distance to SNU of voices 1 and 0)
 		int lastOrnPitch3b = 62;
 		List<Integer> pitchesTab3b = tab.getPitchesInChord(3);
 		List<List<Double>> voiceLabels3b = trans.getChordVoiceLabels().get(3);

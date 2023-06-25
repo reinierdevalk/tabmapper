@@ -155,6 +155,7 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/test-capirola/";
 //		path = "C:/Users/Reinier/Desktop/tabmapper/";
 		path = "C:/Users/Reinier/Desktop/luteconv_v1.4.7/";
+		path = "C:/Users/Reinier/Downloads/medren-2023/";
 		
 
 		boolean includeOrn = true; // YES
@@ -439,7 +440,7 @@ public class TabMapper {
 				p.completeDurations(maxDur);
 //				p = Transcription.completeDurations(p, maxDur);
 				// MIDI
-				File fDur = new File(path + "mapped/"+ tabName + "-dur.mid");
+				File fDur = new File(path + "mapped/"+ tabName + "-dur" + MIDIImport.EXTENSION);
 				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
 					fDur.getAbsolutePath()); // 05.12 added meterInfo and keyInfo
 				// MEI
@@ -2115,7 +2116,8 @@ public class TabMapper {
 //			new String[] {"922_milano_098_que_voulez_vous_dire_de_moi", "Jos2832-Si_jay_perdu"},
 			
 			// Other
-			new String[] {"je_prens_en_gre-tab-rests", "je_prens_en_gre-SATB"},
+//			new String[] {"je_prens_en_gre-tab-rests", "je_prens_en_gre-SATB"},
+			new String[] {"Anchor-Adrianssen-lute 4-4-SIB4-tab", "Anchor-Adrianssen-lute 4-4-SIB4-model"},
 		});
 		return pieces;
 	}
