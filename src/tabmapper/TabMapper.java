@@ -43,21 +43,14 @@ public class TabMapper {
 	private static String[][] resultsOverAllPiecesArrStr;
 	private static Integer[] intsToAvg;
 	private static Double[] doublesToAvg;
+	private static final List<String> COLS = Arrays.asList(new String[]{
+		"piece", "N_model", "N_intab", 
+		"M", "M_o", "M_r", "M_f", "M_a",
+		"m", "m_oa", "m_a", "p_o" // munch
+	});
 
 	private static int totalNumNotes = 0;
 
-	private static final Map<Integer, Integer[] > KEY_SIGS;
-	static { KEY_SIGS = new LinkedHashMap<Integer, Integer[]>();
-		KEY_SIGS.put(4, new Integer[]{4, 1});   // E/c#
-		KEY_SIGS.put(3, new Integer[]{9, 6});   // A/f#
-		KEY_SIGS.put(2, new Integer[]{2, 11});  // D/b
-		KEY_SIGS.put(1, new Integer[]{7, 4});   // G/e
-		KEY_SIGS.put(0, new Integer[]{0, 9});   // C/a
-		KEY_SIGS.put(-1, new Integer[]{5, 2});  // F/d
-		KEY_SIGS.put(-2, new Integer[]{10, 7}); // Bb/g
-		KEY_SIGS.put(-3, new Integer[]{3, 0});  // Eb/c
-		KEY_SIGS.put(-4, new Integer[]{8, 5});  // Ab/f
-	}
 
 	private static final List<Integer> MAJOR = Arrays.asList(new Integer[]{0, 2, 4, 5, 7, 9, 11});
 	private static final List<Integer> MINOR = Arrays.asList(new Integer[]{0, 2, 3, 5, 7, 8, 10});
@@ -66,80 +59,94 @@ public class TabMapper {
 	// F     G     A  Bb    C     D     E 
 	//    F#    Ab       B     C#    Eb
 	// 65 66 67 68 69 70 71 72 73 74 75 76 
-	// 0  1  2  3  4  5  6  7  8  9  10 11
+	// 0     2     4  5     7     9     11
 	//
 	// #1: 66 for 65 = 1  for 0
 	// b2: 66 for 67 = 1  for 2
 	// #2: 68 for 67 = 3  for 2
 	// b3: 68 for 69 = 3  for 4
 	// #4: 71 for 70 = 6  for 5
+	// b5: 71 for 72 = 6  for 7 
 	// #5: 73 for 72 = 8  for 7
 	// b6: 73 for 74 = 8  for 9 
 	// #6: 75 for 74 = 10 for 9
 	// b7: 75 for 76 = 10 for 11
 	//
-	// Each pair represents the ficta pitch (element 0) and the original pitch (element 1)
 	private static List<Integer[]> fictaPairsMajor = Arrays.asList(new Integer[][]{
-		// First note of pair is ficta (i.e., tab has ficta)
-		new Integer[]{1, 0}, // #1
-		new Integer[]{1, 2}, // b2
-		new Integer[]{3, 2}, // #2
-		new Integer[]{3, 4}, // b3
-		new Integer[]{6, 5}, // #4
-		new Integer[]{8, 7}, // #5
-		new Integer[]{8, 9}, // b6
-		new Integer[]{10, 9}, // #6
-		new Integer[]{10, 11}, // b7
-		// Second note of pair is ficta (i.e., GT has ficta)
-		new Integer[]{0, 1}, // #1
-		new Integer[]{2, 1}, // b2
-		new Integer[]{2, 3}, // #2
-		new Integer[]{4, 3}, // b3
-		new Integer[]{5, 6}, // #4
-		new Integer[]{7, 8}, // #5
-		new Integer[]{9, 8}, // b6
-		new Integer[]{9, 10}, // #6
-		new Integer[]{11, 10} // b7
+		// Include only notes that are two semitones apart (so not 3rd and 4th and 7th and 1st)
+		// First note of pair is ficta
+		new Integer[]{1, 0}, // #1st =
+		new Integer[]{1, 2}, // b2nd
+		new Integer[]{3, 2}, // #2nd = 
+		new Integer[]{3, 4}, // b3rd
+		// #3rd = 4th / b4th = 3rd
+		new Integer[]{6, 5}, // #4th =
+		new Integer[]{6, 7}, // b5th
+		new Integer[]{8, 7}, // #5th =
+		new Integer[]{8, 9}, // b6th
+		new Integer[]{10, 9}, // #6th =
+		new Integer[]{10, 11}, // b7th
+		// #7th = 1st / b1st = 7th 
+		// Second note of pair is ficta
+		new Integer[]{0, 1}, // #1st =
+		new Integer[]{2, 1}, // b2nd
+		new Integer[]{2, 3}, // #2nd =
+		new Integer[]{4, 3}, // b3rd
+		// #3rd = 4th / b4th = 3rd
+		new Integer[]{5, 6}, // #4th =
+		new Integer[]{7, 6}, // b5th
+		new Integer[]{7, 8}, // #5th =
+		new Integer[]{9, 8}, // b6th
+		new Integer[]{9, 10}, // #6th =
+		new Integer[]{11, 10} // b7th
+		// #7th = 1st / b1st = 7th
 	});
 
 	// D minor example
 	// D     E  F     G     A  Bb    C  
 	//    Eb       F#    Ab       B     C#
 	// 62 63 64 65 66 67 68 69 70 71 72 73
-	// 0  1  2  3  4  5  6  7  8  9  10 11
+	// 0     2  3     5     7  8     10 
 	// 
 	// #1: 63 for 62 = 1 for 0
 	// b2: 63 for 64 = 1 for 2
 	// #3: 66 for 65 = 4 for 3
-	// b4: 66 for 67 = 4 for 5
+//	// b4: 66 for 67 = 4 for 5 // #3 is always preferred
 	// #4: 68 for 67 = 6 for 5
 	// b5: 68 for 69 = 6 for 7
 	// #6: 71 for 70 = 9 for 8
+	// b7: 71 for 72 = 9 for 10  
 	// #7: 73 for 72 = 11 for 10
-	// b1: 73 for 74 = 11 for 12
+	// b1: 73 for 74 = 11 for 0
 	//
-	// Each pair represents the ficta pitch (element 0) and the original pitch (element 1)
 	private static List<Integer[]> fictaPairsMinor = Arrays.asList(new Integer[][]{
-		// First note of pair is ficta (i.e., tab has ficta)
-		new Integer[]{1, 0}, // #1
-		new Integer[]{1, 2}, // b2
-		new Integer[]{4, 3}, // #3 
-		new Integer[]{4, 5}, // b4
-		new Integer[]{6, 5}, // #4
-		new Integer[]{6, 7}, // b5
-		new Integer[]{9, 8}, // #6
-		new Integer[]{11, 10}, // #7
-		new Integer[]{11, 0}, // b1
-		// Second note of pair is ficta (i.e., GT has ficta)
-		new Integer[]{0, 1}, // #1
-		new Integer[]{2, 1}, // b2
-		new Integer[]{3, 4}, // #3 
-		new Integer[]{5, 4}, // b4
-		new Integer[]{5, 6}, // #4
-		new Integer[]{7, 6}, // b5
-		new Integer[]{8, 9}, // #6
-		new Integer[]{10, 11}, // #7
-		new Integer[]{0, 11}, // b1
+		// Include only notes that are two semitones apart (so not 2nd and 3rd and 5th and 6th)
+		// First note of pair is ficta
+		new Integer[]{1, 0}, // #1st =
+		new Integer[]{1, 2}, // b2nd
+		// #2nd = 3rd / b3rd = 2nd
+		new Integer[]{4, 3}, // #3rd = b4th --> #3rd always preferred
+//		new Integer[]{4, 5}, // b4th
+		new Integer[]{6, 5}, // #4th =
+		new Integer[]{6, 7}, // b5th
+		// #5th = 6th / b6th = 5th
+		new Integer[]{9, 8}, // #6th =
+		new Integer[]{9, 10}, // b7th
+		new Integer[]{11, 10}, // #7th =
+		new Integer[]{11, 0}, // b1st 
+		// Second note of pair is ficta
+		new Integer[]{0, 1}, // #1st =
+		new Integer[]{2, 1}, // b2nd
+		// #2nd = 3rd / b3rd = 2nd
+		new Integer[]{3, 4}, // #3rd = b4th --> #3rd always preferred
+//		new Integer[]{5, 4}, // b4th
+		new Integer[]{5, 6}, // #4th =
+		new Integer[]{7, 6}, // b5th
+		// #5th = 6th / b6th = 5th
+		new Integer[]{8, 9}, // #6th =
+		new Integer[]{10, 9}, // b7
+		new Integer[]{10, 11}, // #7th =
+		new Integer[]{0, 11}, // b1st
 	});
 
 
@@ -155,9 +162,10 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/test-capirola/";
 //		path = "C:/Users/Reinier/Desktop/tabmapper/";
 		path = "C:/Users/Reinier/Desktop/luteconv_v1.4.7/";
-		path = "C:/Users/Reinier/Downloads/medren-2023/";
+//		path = "C:/Users/Reinier/Dropbox/MedRen-2023/tabmapper/adriaenssen/";
+		path = "C:/Users/Reinier/Dropbox/MedRen-2023/tabmapper/paston/";
 		
-
+		
 		boolean includeOrn = true; // YES
 		Connection connection = Connection.RIGHT;
 		boolean grandStaff = true; // YES
@@ -168,21 +176,18 @@ public class TabMapper {
 		List<String> skip = getPiecesToSkip();
 
 		resultsOverAllPieces = new StringBuffer();
-		List<String> cols = Arrays.asList(new String[]{
-			"piece", "N_model", "N_intab", 
-			"M", "M_o", "M_r", "M_f", "M_a",
-			"m", "m_oa", "m_a"
-		});
-		for (int i = 0; i < cols.size(); i++) {
-			String s = cols.get(i);
-			resultsOverAllPieces = (i < cols.size()-1) ? resultsOverAllPieces.append(s + "\t") :
+		for (int i = 0; i < COLS.size(); i++) {
+			String s = COLS.get(i);
+			resultsOverAllPieces = 
+				(i < COLS.size()-1) ? resultsOverAllPieces.append(s + "\t") :
 				resultsOverAllPieces.append(s + "\r\n");
 		}
-		resultsOverAllPiecesArrStr = new String[pieces.size()+1][cols.size()];
+		resultsOverAllPiecesArrStr = new String[pieces.size()+1][COLS.size()];
 		
-		int numCols = cols.size();
+		int numCols = COLS.size();
 		List<Integer> doubleInds = 
-			IntStream.rangeClosed(numCols-3, numCols-1).boxed().collect(Collectors.toList());
+//			IntStream.rangeClosed(numCols-3, numCols-1).boxed().collect(Collectors.toList()); // munch
+			IntStream.rangeClosed(numCols-4, numCols-1).boxed().collect(Collectors.toList());
 		List<Integer> colsToSkip = Arrays.asList(new Integer[]{0});
 		List<Object> listsToAvg = Analyser.getListsToAvg(numCols, doubleInds, colsToSkip);
 		intsToAvg = (Integer[]) listsToAvg.get(0);
@@ -307,27 +312,30 @@ public class TabMapper {
 
 		// Map each piece in pieces
 		shortNames = new ArrayList<>();
+		List<String[]> ornFullAllPieces = new ArrayList<>();
+		List<String> ornDedupAllPieces = new ArrayList<>();
 		for (int i = 0; i < pieces.size(); i++) {
 			String[] piece = pieces.get(i);
 			String tabName = piece[0];
 			String modelName = piece[1];
 			System.out.println("\r\n... mapping " + tabName + " ...");
-			shortNames.add(ToolBox.getShortName(tabName));
+			shortNames.add(ToolBox.getShortName(tabName.substring(tabName.indexOf("-") + 1)));
 	//		if (i == 0) {
 	//			shortNames.set(0, "OSP"); //-**-
 	//		}
 
 			// Make tab; make model transcription
-			Tablature tab = 
-				new Tablature(new File(path + "tab/" + tabName + Encoding.EXTENSION), false);
+			Tablature tab = new Tablature(new File(path + "tab/" + tabName + Encoding.EXTENSION));
+//			Tablature tab = new Tablature(new File(path + "tab/" + tabName + Encoding.EXTENSION), false);
 //			List<Integer[]> mapp = tab.mapTabBarsToMetricBars();
 //			for (Integer[] in : mapp) {
 //				System.out.println(Arrays.toString(in));
 //			}
 
-			Transcription model = 
-				new Transcription(Type.MAPPING, new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION), 
-				new File(path + "tab/" + tabName + Encoding.EXTENSION)); //,*/ tab.getEncoding().getTimeline());
+			Transcription model = new Transcription(
+				tab.getMeterInfo(), new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION)
+			);
+//				new File(path + "tab/" + tabName + Encoding.EXTENSION)); //,*/ tab.getEncoding().getTimeline());
 //			MIDIExport.exportMidiFile(model.getPiece(), Arrays.asList(new Integer[]{MIDIExport.GUITAR}), path + "5253_02-2.mid");
 //			System.exit(0); // HIERRR
 			
@@ -425,8 +433,10 @@ public class TabMapper {
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(trans, tab, /*btp, trans.getKeyInfo(),
 						tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, tabOnTop,
-						alignWithMetricBarring, path + "mapped/" + tabName);
+						alignWithMetricBarring, new String[]{path + "mapped/" + tabName, "TabMapper"});
 				}
+				ornFullAllPieces.addAll(MEIExport.ornFull);
+				MEIExport.ornFull.clear();
 			}
 			// With full durations 
 			if (completeDurations) {
@@ -450,7 +460,7 @@ public class TabMapper {
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(transDur, tab, /*btp, transDur.getKeyInfo(),
 						tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, tabOnTop,
-						alignWithMetricBarring, path + "mapped/" + tabName + "-dur");
+						alignWithMetricBarring, new String[]{path + "mapped/" + tabName + "-dur", "TabMapper"});
 				}
 			}
 		}
@@ -462,7 +472,28 @@ public class TabMapper {
 			totalNumNotes + " notes) processed" + "\r\n");
 		
 		System.out.println(resultsOverAllPieces);
-
+		
+		StringBuffer sb = new StringBuffer();
+		for (String[] o : ornFullAllPieces) {
+			sb.append(Arrays.asList(o) + "\r\n");
+		}
+		ToolBox.storeTextFile(sb.toString(), new File(path + "mapped/" + "glossary.txt"));
+		
+		// dedulicate
+		for (String[] o : ornFullAllPieces) {
+			if (!ornDedupAllPieces.contains(o[0]) && !o[0].startsWith("piece=")) {
+				ornDedupAllPieces.add(o[0]);
+			}
+			else {
+				System.out.println(o[0]);
+			}
+		}
+		sb = new StringBuffer();
+		for (String l : ornDedupAllPieces) {
+			sb.append(l + "\r\n");
+		}
+		ToolBox.storeTextFile(sb.toString(), new File(path + "mapped/" + "glossary-dedup.txt"));
+		
 		String latexTable = ToolBox.createLaTeXTable(resultsOverAllPiecesArrStr, intsToAvg,
 			doublesToAvg, 0, 5, true);
 		System.out.println(latexTable);
@@ -869,6 +900,7 @@ public class TabMapper {
 		// m_o: repetitions and ficta do not count
 		double mo  = (numNotes - (Mo + Ma)) / (double) numNotes; 
 		double m = (numNotes - Ma) / (double) numNotes;
+		double po = (Mo / (double) numNotes); // munch
 
 		resultsOverAllPieces.append(
 //			((shortName.length() < 4) ? shortName : shortName.substring(0, 3)) + "\t"  +
@@ -882,18 +914,22 @@ public class TabMapper {
 			otherInd.size() + "\t" +
 			ToolBox.formatDouble(morf, 0, 5) + "\t" +
 			ToolBox.formatDouble(mo, 0, 5) + "\t" +
-			ToolBox.formatDouble(m, 0, 5) + 
+			ToolBox.formatDouble(m, 0, 5) + "\t" +
+			ToolBox.formatDouble(po, 0, 5) + // munch
 			"\r\n"
 		);
 		Integer[] currInts = new Integer[]{
 			null, 
 			numNotesTrans, numNotes, numMismatches, 
 			ornamentationInd.size(), repetitionInd.size(), fictaInd.size(), otherInd.size(),
-			null, null, null
+			null, null, null,
+			null // munch
 		};
 		Double[] currDoubles = new Double[]{
-			null, null, null, null, null, null, null, null,
-			morf, mo, m
+			null, 
+			null, null, null, null, null, null, null,
+			morf, mo, m,
+			po // munch
 		};
 		resultsOverAllPiecesArrStr[pieceIndex][0] = shortNames.get(pieceIndex); 
 		for (int i = 0; i < currInts.length; i++) {
@@ -902,7 +938,11 @@ public class TabMapper {
 				intsToAvg[i] += currInts[i]; 
 			}
 			else if (currDoubles[i] != null) {
-				resultsOverAllPiecesArrStr[pieceIndex][i] = ToolBox.formatDouble(currDoubles[i], 0, 5);
+				String d = ToolBox.formatDouble(currDoubles[i], 0, 5); // munch
+//				if (i == COLS.indexOf("p_o")) {
+//					d = ToolBox.formatDouble(currDoubles[i], 2, 5);
+//				}
+				resultsOverAllPiecesArrStr[pieceIndex][i] = d;
 				doublesToAvg[i] += currDoubles[i];
 			}
 		}
@@ -1359,19 +1399,27 @@ public class TabMapper {
 		// Assume one key for the whole piece
 		Integer[] key = keyInfo.get(0); 
 		int keySig = key[Transcription.KI_KEY]; // num b (<0) / # (>0) 
-		int scale = key[Transcription.KI_MODE]; // major (0) / minor (1)
-		int base = KEY_SIGS.get(keySig)[scale]%12;
-		List<Integer[]> fictaPairs = (scale == 0) ? fictaPairsMajor : fictaPairsMinor;
-//		List<Integer> intervals = (scale == 0) ? new ArrayList<Integer>(MAJOR) : new ArrayList<Integer>(MINOR);		
-//		List<Integer> baseIntervals = new ArrayList<>();
+		int mode = key[Transcription.KI_MODE]; // major (0) / minor (1)
+		int base = MEIExport.KEY_SIG_MPCS.get(keySig)[mode];
+//		int base = MEIExport.KEY_SIG_MPCS.get(keySig)[scale]%12;
+//		int base = MEIExport.KEY_SIGS.get(keySig)[scale]%12;
+		List<Integer[]> fictaPairs = (mode == 0) ? fictaPairsMajor : fictaPairsMinor;
+		List<Integer> intervals = (mode == 0) ? new ArrayList<Integer>(MAJOR) : new ArrayList<Integer>(MINOR);		
+		List<Integer> baseIntervals = new ArrayList<>();
+		intervals.forEach((interval) -> baseIntervals.add((interval + base)%12));
 //		intervals.forEach((interval) -> baseIntervals.add((interval + KEY_SIGS.get(keySig)[scale])%12));
+		
+		List<Object> grids = MEIExport.createGrids(keySig, mode);
+		Integer[] mpcGrid = (Integer[]) grids.get(0);
+		String[] altGrid = (String[]) grids.get(1);
+		String[] pcGrid = (String[]) grids.get(2);
 		
 		List<Integer> repetitionInd = new ArrayList<>();
 		List<Integer> fictaInd = new ArrayList<>();
 		List<Integer> otherInd = new ArrayList<>();
 		
-		// Find the cheapest mapping of pitchesNotInMIDI. In three cases, two 
-		// iterations are needed, and in one special case three; otherwise only one:
+		// Find the cheapest mapping of pitchesNotInMIDI. In three cases, two iterations
+		// are needed, and in one special case three; otherwise only one:
 		// iteration 0: find the cheapest combination of all availableVoices-sized subsets of 
 		//    	        pitchesInMIDI and the available voices
 		// iteration 1: find the cheapest combination of the remaining pitchesInMIDI and _all_ voices
@@ -1483,6 +1531,11 @@ public class TabMapper {
 			for (int k = 0; k < subsetsOfPitchesNotInMIDI.size(); k++) {
 				List<Integer[]> currCheapestMapping = 
 					getCheapestMapping(subsetsOfPitchesNotInMIDI.get(k), comb, lastPitchInAvailableVoices);
+//				System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaa");
+//				System.out.println(currOnset);
+//				System.out.println(pitchesTab);
+//				System.out.println(pitchesGT);
+//				System.out.println(currCheapestMapping);
 				int currCheapest = 
 					ToolBox.sumListInteger(ToolBox.getItemsAtIndex(currCheapestMapping, 2));
 				if (currCheapest < cheapest) {
@@ -1559,24 +1612,138 @@ public class TabMapper {
 				int pitch = in[1];
 				int cost = in[2];
 				int pitchInd = indPitchesNotInMIDI.get(pitchesNotInMIDIOriginal.indexOf(pitch));
-				// Repetition
+				// Check for repetition
 				if (cost == 0) {
 					repetitionInd.add(pitchInd);
 				}
-				// Ficta
-				else if	(
-					// sharp ficta
-					pitchesGT.contains(pitch-1) && fictaPairs.stream().anyMatch(a -> 
-					Arrays.equals(a, new Integer[]{(pitch-base)%12, ((pitch-1)-base)%12}))
-					||
-					// flat ficta
-					pitchesGT.contains(pitch+1) && fictaPairs.stream().anyMatch(a -> 
-					Arrays.equals(a, new Integer[]{(pitch-base)%12, ((pitch+1)-base)%12}))) {	
-					fictaInd.add(pitchInd);
-				}
-				// Residual cases
+				// If not repetition: ficta or adaptation
 				else {
-					otherInd.add(pitchInd);
+//					boolean possibleSharpFicta = 
+//						pitchesGT.contains(pitch-1) && fictaPairs.stream().anyMatch(a -> 
+//						Arrays.equals(a, new Integer[]{(pitch-base)%12, ((pitch-1)-base)%12}));
+//					boolean possibleFlatFicta = 
+//						pitchesGT.contains(pitch+1) && fictaPairs.stream().anyMatch(a ->
+//						Arrays.equals(a, new Integer[]{(pitch-base)%12, ((pitch+1)-base)%12}));
+					
+					// Check for ficta
+					String pName = null;
+					String pNameOtherNote = null;
+					if (pitchesGT.contains(pitch+1) || pitchesGT.contains(pitch-1)) {
+						// If pitch and pitch +/- 1 have the same pName, ficta applies
+						String[] paPitch = (String[]) MEIExport.spellPitch(
+							pitch, -1, null, keySig, mpcGrid, altGrid, pcGrid, null
+						).get(0);
+						pName = paPitch[0];
+						System.out.println("pitch in tab:");
+						System.out.println(paPitch[0]);
+						System.out.println(paPitch[1]);
+					
+						System.out.println("pitch in GT:");
+						if (pitchesGT.contains(pitch + 1)) {
+							String[] paSemitoneAbove = (String[]) MEIExport.spellPitch(
+								pitch+1, -1, null, keySig, mpcGrid, altGrid, pcGrid, null
+							).get(0);
+							pNameOtherNote = paSemitoneAbove[0];
+							System.out.println(paSemitoneAbove[0]);
+							System.out.println(paSemitoneAbove[1]);
+						}
+						else {
+							String[] paSemitoneBelow = (String[]) MEIExport.spellPitch(
+								pitch-1, -1, null, keySig, mpcGrid, altGrid, pcGrid, null
+							).get(0);
+							pNameOtherNote = paSemitoneBelow[0];
+							System.out.println(paSemitoneBelow[0]);
+							System.out.println(paSemitoneBelow[1]);
+						}
+					}
+					if (pName != null && pName.equals(pNameOtherNote)) {
+						fictaInd.add(pitchInd);
+						System.out.println("FICTA");
+						currOnset.reduce();
+						System.out.println(currOnset);
+						System.out.println(pitchesGT);
+						System.out.println(pitch);
+						System.out.println(base);
+						System.out.println(keySig);
+						System.out.println(mode);
+						System.out.println("---");
+//						System.exit(0);
+					}
+					// If not ficta: adaptation
+					else {
+						otherInd.add(pitchInd);
+					}
+					
+					
+//					if	(
+////						!baseIntervals.contains(pitch%12) &&
+//						// sharp ficta
+//						pitchesGT.contains(pitch-1) && fictaPairs.stream().anyMatch(a -> 
+//						Arrays.equals(a, new Integer[]{(pitch-base)%12, ((pitch-1)-base)%12}))
+//						||
+//						// flat ficta
+//						pitchesGT.contains(pitch+1) && fictaPairs.stream().anyMatch(a ->
+//						Arrays.equals(a, new Integer[]{(pitch-base)%12, ((pitch+1)-base)%12}))) {
+//
+//						// If pitch and pitch +/- 1 have the same pName, ficta applies
+//						String[] paPitch = (String[]) MEIExport.spellPitch(
+//							pitch, -1, null, keySig, mpcGrid, altGrid, pcGrid, null
+//						).get(0);
+//						System.out.println("pitch in tab:");
+//						System.out.println(paPitch[0]);
+//						System.out.println(paPitch[1]);
+//					
+//						System.out.println("pitch in GT:");
+//						String pNameOtherNote = ""; 
+//						if (pitchesGT.contains(pitch + 1)) {
+//							String[] paSemitoneAbove = (String[]) MEIExport.spellPitch(
+//								pitch+1, -1, null, keySig, mpcGrid, altGrid, pcGrid, null
+//							).get(0);
+//							pNameOtherNote = paSemitoneAbove[0];
+//							System.out.println(paSemitoneAbove[0]);
+//							System.out.println(paSemitoneAbove[1]);
+//						}
+//						if (pitchesGT.contains(pitch - 1)) {
+//							String[] paSemitoneBelow = (String[]) MEIExport.spellPitch(
+//								pitch-1, -1, null, keySig, mpcGrid, altGrid, pcGrid, null
+//							).get(0);
+//							pNameOtherNote = paSemitoneBelow[0];
+//							System.out.println(paSemitoneBelow[0]);
+//							System.out.println(paSemitoneBelow[1]);
+//						}
+//					
+//						currOnset.reduce();
+//						System.out.println(currOnset);
+//						System.out.println(pitchesGT);
+//						System.out.println(pitch);
+//						System.out.println(base);
+//						System.out.println(keySig);
+//						System.out.println(mode);
+//						System.out.println("---");
+//						System.out.println(Arrays.asList(new Integer[]{(pitch-base)%12, ((pitch-1)-base)%12}));
+////						if (pitchesGT.equals(Arrays.asList(new Integer[]{null, 62, null, 65})))
+////						if (pitch != 53 && pitch != 68 && pitch != 66 && pitch != 65 && pitch != 56)
+////						System.exit(0);
+//						
+//						if (paPitch[0].equals(pNameOtherNote)) {
+//							fictaInd.add(pitchInd);
+//							isFicta = true;
+//						}
+//						System.out.println(isFicta);
+////						System.exit(0);
+//					}
+//					// If not ficta
+//					if (!isFicta) {
+//						// Adaptation
+//						otherInd.add(pitchInd);
+//					}
+				
+				
+////				// Adaptation
+////				else {
+////					otherInd.add(pitchInd);
+////				}
+//				}
 				}
 			}
 
@@ -2004,22 +2171,6 @@ public class TabMapper {
 //			new String[]{"1132_13_o_sio_potessi_donna_berchem_solo", "Berchem_-_O_s'io_potessi_donna"}
 //			new String[]{"capirola-1520-et_in_terra_pax", "Jos0403b-Missa_Pange_lingua-Gloria-Et_in_terra"},
 			
-			// Tab reconstruction project
-//			new String[]{"ah_golden_hairs-NEW", "ah_golden_hairs-NEW"},
-//			new String[]{"an_aged_dame-II", "an_aged_dame-II"},
-//			new String[]{"as_caesar_wept-II", "as_caesar_wept-II"},
-//			new String[]{"blame_i_confess-II", "blame_i_confess-II"},
-////			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
-//			new String[]{"in_angels_weed-II", "in_angels_weed-II"},
-//			new String[]{"o_lord_bow_down-II", "o_lord_bow_down-II"},
-//			new String[]{"o_that_we_woeful_wretches-NEW", "o_that_we_woeful_wretches-NEW"},
-//			new String[]{"quis_me_statim-II", "quis_me_statim-II"},
-//			new String[]{"rejoyce_unto_the_lord-NEW", "rejoyce_unto_the_lord-NEW"},
-//			new String[]{"sith_death-NEW", "sith_death-NEW"},
-//			new String[]{"the_lord_is_only_my_support-NEW", "the_lord_is_only_my_support-NEW"},
-//			new String[]{"the_man_is_blest-NEW", "the_man_is_blest-NEW"},
-//			new String[]{"while_phoebus-II", "while_phoebus-II"},
-			
 			// JosquIntab
 			// a. Mass sections
 //			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"}, // tab bar:metric bar 3:2
@@ -2114,10 +2265,36 @@ public class TabMapper {
 //			new String[] {"4482_50_mille_regrets_P", "Jos2825-Mille_regretz"},
 //			new String[] {"4469_39_plus_nulz_regrets_P", "Jos2828-Plus_nulz_regrets"},
 //			new String[] {"922_milano_098_que_voulez_vous_dire_de_moi", "Jos2832-Si_jay_perdu"},
+
+			// Byrd/Paston
+			new String[]{"byrd-ah_golden_hairs-NEW", "byrd-ah_golden_hairs-NEW"},
+			new String[]{"byrd-an_aged_dame-II", "byrd-an_aged_dame-II"},
+			new String[]{"byrd-as_caesar_wept-II", "byrd-as_caesar_wept-II"},
+			new String[]{"byrd-blame_i_confess-II", "byrd-blame_i_confess-II"},
+//			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
+			new String[]{"byrd-in_angels_weed-II", "byrd-in_angels_weed-II"},
+			new String[]{"byrd-o_lord_bow_down-II", "byrd-o_lord_bow_down-II"},
+			new String[]{"byrd-o_that_we_woeful_wretches-NEW", "byrd-o_that_we_woeful_wretches-NEW"},
+			new String[]{"byrd-quis_me_statim-II", "byrd-quis_me_statim-II"},
+			new String[]{"byrd-rejoyce_unto_the_lord-NEW", "byrd-rejoyce_unto_the_lord-NEW"},
+			new String[]{"byrd-sith_death-NEW", "byrd-sith_death-NEW"},
+			new String[]{"byrd-the_lord_is_only_my_support-NEW", "byrd-the_lord_is_only_my_support-NEW"},
+			new String[]{"byrd-the_man_is_blest-NEW", "byrd-the_man_is_blest-NEW"},
+			new String[]{"byrd-while_phoebus-II", "byrd-while_phoebus-II"}
+			
+			// Adriaenssen
+//			new String[] {"abran-tant_vous_allez", "abran-tant_vous_allez-SIB4-no_tab"},
+//			new String[] {"berchem-o_s_io", "berchem-o_s_io-SIB4-no_tab"},
+//			new String[] {"costeley-la_terre_les", "costeley-la_terre_les-SIB4-no_tab"},
+//			new String[] {"ferabosco-io_mi_son", "ferabosco-io_mi_son-SIB4-no_tab"},
+//			new String[] {"lasso-appariran_per_me", "lasso-appariran_per_me-SIB4-no_tab"},
+// 			new String[] {"lasso-avecque_vous", "lasso-avecque_vous-SIB4-no_tab"},
+//			new String[] {"lasso-madonna_mia_pieta", "lasso-madonna_mia_pieta-SIB4-no_tab"},
+//			new String[] {"lasso-poi_che_l", "lasso-poi_che_l-SIB4-no_tab"},
+//			new String[] {"rore-anchor_che_col", "rore-anchor_che_col-SIB4-no_tab"},
 			
 			// Other
 //			new String[] {"je_prens_en_gre-tab-rests", "je_prens_en_gre-SATB"},
-			new String[] {"Anchor-Adrianssen-lute 4-4-SIB4-tab", "Anchor-Adrianssen-lute 4-4-SIB4-model"},
 		});
 		return pieces;
 	}

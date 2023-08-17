@@ -57,9 +57,9 @@ public class TabMapperTest extends TestCase {
 
 
 	public void testFindClosestPitchesAndVoices() {
+		Tablature tab = new Tablature(encodingTestpiece);
 		Transcription trans = new Transcription(midiTestpiece, encodingTestpiece);
-		Tablature tab = new Tablature(encodingTestpiece, false);
-		
+
 		List<List<List<Integer>>> expected = new ArrayList<>();
 		
 		// g'# to chord 1
