@@ -162,9 +162,9 @@ public class TabMapper {
 //		path = "C:/Users/Reinier/Desktop/test-capirola/";
 //		path = "C:/Users/Reinier/Desktop/tabmapper/";
 		path = "C:/Users/Reinier/Desktop/luteconv_v1.4.7/";
-//		path = "C:/Users/Reinier/Dropbox/MedRen-2023/tabmapper/adriaenssen/";
-		path = "C:/Users/Reinier/Dropbox/MedRen-2023/tabmapper/paston/";
-		
+		path = "C:/Users/Reinier/Dropbox/MedRen-2023/tabmapper/adriaenssen/";
+//		path = "C:/Users/Reinier/Dropbox/MedRen-2023/tabmapper/paston/";
+		path = "F:/research/data/annotated/tabmapper/josquin/";
 		
 		boolean includeOrn = true; // YES
 		Connection connection = Connection.RIGHT;
@@ -317,9 +317,12 @@ public class TabMapper {
 		for (int i = 0; i < pieces.size(); i++) {
 			String[] piece = pieces.get(i);
 			String tabName = piece[0];
-			String modelName = piece[1];
+			String modelName = piece.length == 1 ? piece[0] : piece[1];
 			System.out.println("\r\n... mapping " + tabName + " ...");
-			shortNames.add(ToolBox.getShortName(tabName.substring(tabName.indexOf("-") + 1)));
+			String shortName =
+				tabName.substring(0, 1).matches("^[0-9].*") ? tabName.substring(0, tabName.indexOf("_")) :
+				ToolBox.getShortName(tabName.substring(tabName.indexOf("-") + 1));
+			shortNames.add(shortName);
 	//		if (i == 0) {
 	//			shortNames.set(0, "OSP"); //-**-
 	//		}
@@ -335,6 +338,14 @@ public class TabMapper {
 			Transcription model = new Transcription(
 				tab.getMeterInfo(), new File(path + "MIDI/" + modelName + MIDIImport.EXTENSION)
 			);
+//			System.out.println(path + "MIDI/" + modelName + MIDIImport.EXTENSION);
+//			ScorePiece sp = model.getScorePiece();
+//			NotationSystem ns = sp.getScore();
+//			NotationVoice nv = ns.get(0).get(0);
+//			for (NotationChord nc : nv) {
+//				System.out.println(nc);
+//			}
+//			System.exit(0);
 //				new File(path + "tab/" + tabName + Encoding.EXTENSION)); //,*/ tab.getEncoding().getTimeline());
 //			MIDIExport.exportMidiFile(model.getPiece(), Arrays.asList(new Integer[]{MIDIExport.GUITAR}), path + "5253_02-2.mid");
 //			System.exit(0); // HIERRR
@@ -2176,7 +2187,7 @@ public class TabMapper {
 //			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"}, // tab bar:metric bar 3:2
 //			new String[]{"5266_15_cum_sancto_spiritu_desprez", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"}, // tab bar:metric bar 3:2
 //			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-1", "Jos0303c-Missa_De_beata_virgine-Credo-1-102"},
-			// JEP (has imprecise triplet onset(s))		
+			// JEP (has imprecise triplet onset(s))
 //			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-2", "Jos0303c-Missa_De_beata_virgine-Credo-103-159"},
 //			new String[]{"5106_10_misa_de_faysan_regres_2_gloria", "Jos0801b-Missa_Faisant_regretz-Gloria-37-94"},
 //			new String[]{"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-1", "Jos0801d-Missa_Faisant_regretz-Sanctus-1-22"},
@@ -2196,56 +2207,57 @@ public class TabMapper {
 			// 4465_33-34_memor_esto-2 has 3(Q) triplets in bb. 64-74, 100-102, 109-113
 			// 5255_04_stabat_mater_dolorosa_desprez-2 has 3(Q) triplets in bb. 71-75, 77, 79-81, 83-85
 			// JEP (has imprecise triplet onset(s))		
-//			new String[]{"5265_14_absalon_fili_me_desprez", "Jos1401-Absalon_fili_mi"},
+			new String[]{"5265_14_absalon_fili_me_desprez", "Jos1401-Absalon_fili_mi"},
 			// JEP (has imprecise triplet onset(s))		
-//			new String[]{"3647_070_benedicta_est_coelorum_josquin_T", "Jos2313-Benedicta_es_celorum-1-107"},
+			new String[]{"3647_070_benedicta_est_coelorum_josquin_T", "Jos2313-Benedicta_es_celorum-1-107"},
 			// JEP (has imprecise triplet onset(s))
-//			new String[]{"4964_01a_benedictum_es_coelorum_josquin", "Jos2313-Benedicta_es_celorum-1-107"},
-//			new String[]{"4965_01b_per_illud_ave_josquin", "Jos2313-Benedicta_es_celorum-108-135"},
-//			new String[]{"4966_01c_nunc_mater_josquin", "Jos2313-Benedicta_es_celorum-136-176"},
+			new String[]{"4964_01a_benedictum_es_coelorum_josquin", "Jos2313-Benedicta_es_celorum-1-107"},
+			new String[]{"4965_01b_per_illud_ave_josquin", "Jos2313-Benedicta_es_celorum-108-135"},
+			new String[]{"4966_01c_nunc_mater_josquin", "Jos2313-Benedicta_es_celorum-136-176"},
 			// JEP (has imprecise triplet onset(s))
-//			new String[]{"5254_03_benedicta_es_coelorum_desprez-1", "Jos2313-Benedicta_es_celorum-1-107"}, // check triplets in tab 
-//			new String[]{"5254_03_benedicta_es_coelorum_desprez-2", "Jos2313-Benedicta_es_celorum-108-135"},
-//			new String[]{"5254_03_benedicta_es_coelorum_desprez-3", "Jos2313-Benedicta_es_celorum-136-176"},
+			new String[]{"5254_03_benedicta_es_coelorum_desprez-1", "Jos2313-Benedicta_es_celorum-1-107"}, // check triplets in tab 
+			new String[]{"5254_03_benedicta_es_coelorum_desprez-2", "Jos2313-Benedicta_es_celorum-108-135"},
+			new String[]{"5254_03_benedicta_es_coelorum_desprez-3", "Jos2313-Benedicta_es_celorum-136-176"},
 			// TODO 0, 1, 32, 33, 36, 38	
 			// JEP (has imprecise triplet onset(s))
-//			new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
+			new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
 			// TODO 91, 93, 222, 226, 231, 234
-//			new String[]{"5702_benedicta-2", "Jos2313-Benedicta_es_celorum-108-135"},
-//			new String[]{"5702_benedicta-3", "Jos2313-Benedicta_es_celorum-136-176"},
-//			new String[]{"3591_008_fecit_potentiam_josquin", "Jos2004-Magnificat_Quarti_toni-Verse_6_Fecit_potentiam"},
-//			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-1", "Jos1704-In_exitu_Israel_de_Egypto-1-143"},
-//			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-2", "Jos1704-In_exitu_Israel_de_Egypto-144-280"},
+			new String[]{"5702_benedicta-2", "Jos2313-Benedicta_es_celorum-108-135"},
+			new String[]{"5702_benedicta-3", "Jos2313-Benedicta_es_celorum-136-176"},
+			new String[]{"3591_008_fecit_potentiam_josquin", "Jos2004-Magnificat_Quarti_toni-Verse_6_Fecit_potentiam"},
+			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-1", "Jos1704-In_exitu_Israel_de_Egypto-1-143"},
+			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-2", "Jos1704-In_exitu_Israel_de_Egypto-144-280"},
+			// JEP (has imprecise triplet onset(s)) // hier
+			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
+			new String[]{"5256_05_inviolata_integra_desprez-1", "Jos2404-Inviolata_integra_et_casta_es-1-63"},
 			// JEP (has imprecise triplet onset(s))
-//hier			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
-//			new String[]{"5256_05_inviolata_integra_desprez-1", "Jos2404-Inviolata_integra_et_casta_es-1-63"},
+			new String[]{"5256_05_inviolata_integra_desprez-2", "Jos2404-Inviolata_integra_et_casta_es-64-105"},
 			// JEP (has imprecise triplet onset(s))
-//			new String[]{"5256_05_inviolata_integra_desprez-2", "Jos2404-Inviolata_integra_et_casta_es-64-105"},
+			new String[]{"5256_05_inviolata_integra_desprez-3", "Jos2404-Inviolata_integra_et_casta_es-106-144"},
+			new String[]{"4465_33-34_memor_esto-1", "Jos1714-Memor_esto_verbi_tui-1-165"},
+			// JEP (has imprecise triplet onset(s)) // hier
+			new String[]{"4465_33-34_memor_esto-2", "Jos1714-Memor_esto_verbi_tui-166-325"},
+			new String[]{"932_milano_108_pater_noster_josquin-1", "Jos2009-Pater_noster-1-120"},
+			new String[]{"932_milano_108_pater_noster_josquin-2", "Jos2009-Pater_noster-121-198"},
+			new String[]{"5252_01_pater_noster_desprez-1", "Jos2009-Pater_noster-1-120"},
+			
+			new String[]{"5252_01_pater_noster_desprez-2", "Jos2009-Pater_noster-121-198"},
+			new String[]{"3649_072_praeter_rerum_seriem_josquin_T", "Jos2411-Preter_rerum_seriem-1-87"},
+			new String[]{"5253_02_praeter_rerum_seriem_desprez-1", "Jos2411-Preter_rerum_seriem-1-87"},
+			new String[]{"5253_02_praeter_rerum_seriem_desprez-2", "Jos2411-Preter_rerum_seriem-88-185"},
+			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-1", "Jos2411-Preter_rerum_seriem-1-87"},
+			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-2", "Jos2411-Preter_rerum_seriem-88-185"},	
+			new String[]{"1274_12_qui_habitat_in_adjutorio-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
 			// JEP (has imprecise triplet onset(s))
-//			new String[]{"5256_05_inviolata_integra_desprez-3", "Jos2404-Inviolata_integra_et_casta_es-106-144"},
-//			new String[]{"4465_33-34_memor_esto-1", "Jos1714-Memor_esto_verbi_tui-1-165"},
+			new String[]{"1274_12_qui_habitat_in_adjutorio-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
+			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
 			// JEP (has imprecise triplet onset(s))
-//hier			new String[]{"4465_33-34_memor_esto-2", "Jos1714-Memor_esto_verbi_tui-166-325"},
-//			new String[]{"932_milano_108_pater_noster_josquin-1", "Jos2009-Pater_noster-1-120"},
-//			new String[]{"932_milano_108_pater_noster_josquin-2", "Jos2009-Pater_noster-121-198"},
-//			new String[]{"5252_01_pater_noster_desprez-1", "Jos2009-Pater_noster-1-120"},	
-//			new String[]{"5252_01_pater_noster_desprez-2", "Jos2009-Pater_noster-121-198"},
-//			new String[]{"3649_072_praeter_rerum_seriem_josquin_T", "Jos2411-Preter_rerum_seriem-1-87"},
-//			new String[]{"5253_02_praeter_rerum_seriem_desprez-1", "Jos2411-Preter_rerum_seriem-1-87"},
-//			new String[]{"5253_02_praeter_rerum_seriem_desprez-2", "Jos2411-Preter_rerum_seriem-88-185"},
-//			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-1", "Jos2411-Preter_rerum_seriem-1-87"},
-//			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-2", "Jos2411-Preter_rerum_seriem-88-185"},	
-//			new String[]{"1274_12_qui_habitat_in_adjutorio-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
-			// JEP (has imprecise triplet onset(s))
-//			new String[]{"1274_12_qui_habitat_in_adjutorio-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
-//			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
-			// JEP (has imprecise triplet onset(s))
-//			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
+			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
 			// TODO 0, 1
-//			new String[]{"933_milano_109_stabat_mater_dolorosa_josquin", "Jos2509-Stabat_mater__Comme_femme-1-88"},
-//			new String[]{"5255_04_stabat_mater_dolorosa_desprez-1", "Jos2509-Stabat_mater__Comme_femme-1-88"},
+			new String[]{"933_milano_109_stabat_mater_dolorosa_josquin", "Jos2509-Stabat_mater__Comme_femme-1-88"},
+			new String[]{"5255_04_stabat_mater_dolorosa_desprez-1", "Jos2509-Stabat_mater__Comme_femme-1-88"},
 			// JEP (has imprecise triplet onset(s))
-//			new String[]{"5255_04_stabat_mater_dolorosa_desprez-2", "Jos2509-Stabat_mater__Comme_femme-89-180"},
+			new String[]{"5255_04_stabat_mater_dolorosa_desprez-2", "Jos2509-Stabat_mater__Comme_femme-89-180"},
 
 			// c. Chansons
 //			new String[]{"4400_45_ach_unfall_was", "Jos2829-Qui_belles_amours"}, // barring messed up due to correction in bar 2 
@@ -2266,32 +2278,32 @@ public class TabMapper {
 //			new String[] {"4469_39_plus_nulz_regrets_P", "Jos2828-Plus_nulz_regrets"},
 //			new String[] {"922_milano_098_que_voulez_vous_dire_de_moi", "Jos2832-Si_jay_perdu"},
 
-			// Byrd/Paston
-			new String[]{"byrd-ah_golden_hairs-NEW", "byrd-ah_golden_hairs-NEW"},
-			new String[]{"byrd-an_aged_dame-II", "byrd-an_aged_dame-II"},
-			new String[]{"byrd-as_caesar_wept-II", "byrd-as_caesar_wept-II"},
-			new String[]{"byrd-blame_i_confess-II", "byrd-blame_i_confess-II"},
-//			new String[]{"delight_is_dead-II", "delight_is_dead-II"},
-			new String[]{"byrd-in_angels_weed-II", "byrd-in_angels_weed-II"},
-			new String[]{"byrd-o_lord_bow_down-II", "byrd-o_lord_bow_down-II"},
-			new String[]{"byrd-o_that_we_woeful_wretches-NEW", "byrd-o_that_we_woeful_wretches-NEW"},
-			new String[]{"byrd-quis_me_statim-II", "byrd-quis_me_statim-II"},
-			new String[]{"byrd-rejoyce_unto_the_lord-NEW", "byrd-rejoyce_unto_the_lord-NEW"},
-			new String[]{"byrd-sith_death-NEW", "byrd-sith_death-NEW"},
-			new String[]{"byrd-the_lord_is_only_my_support-NEW", "byrd-the_lord_is_only_my_support-NEW"},
-			new String[]{"byrd-the_man_is_blest-NEW", "byrd-the_man_is_blest-NEW"},
-			new String[]{"byrd-while_phoebus-II", "byrd-while_phoebus-II"}
+			// Byrd
+//			new String[]{"byrd-ah_golden_hairs"},
+//			new String[]{"byrd-an_aged_dame"},
+//			new String[]{"byrd-as_caesar_wept"},
+//			new String[]{"byrd-blame_i_confess"},
+////			new String[]{"delight_is_dead"},
+//			new String[]{"byrd-in_angels_weed"},
+//			new String[]{"byrd-o_lord_bow"},
+//			new String[]{"byrd-o_that_we"},
+//			new String[]{"byrd-quis_me_statim"},
+//			new String[]{"byrd-rejoyce_unto_the"},
+//			new String[]{"byrd-sith_death"},
+//			new String[]{"byrd-the_lord_is"},
+//			new String[]{"byrd-the_man_is"},
+//			new String[]{"byrd-while_phoebus"}
 			
 			// Adriaenssen
-//			new String[] {"abran-tant_vous_allez", "abran-tant_vous_allez-SIB4-no_tab"},
-//			new String[] {"berchem-o_s_io", "berchem-o_s_io-SIB4-no_tab"},
-//			new String[] {"costeley-la_terre_les", "costeley-la_terre_les-SIB4-no_tab"},
-//			new String[] {"ferabosco-io_mi_son", "ferabosco-io_mi_son-SIB4-no_tab"},
-//			new String[] {"lasso-appariran_per_me", "lasso-appariran_per_me-SIB4-no_tab"},
-// 			new String[] {"lasso-avecque_vous", "lasso-avecque_vous-SIB4-no_tab"},
-//			new String[] {"lasso-madonna_mia_pieta", "lasso-madonna_mia_pieta-SIB4-no_tab"},
-//			new String[] {"lasso-poi_che_l", "lasso-poi_che_l-SIB4-no_tab"},
-//			new String[] {"rore-anchor_che_col", "rore-anchor_che_col-SIB4-no_tab"},
+//			new String[] {"abran-tant_vous_allez"},
+//			new String[] {"berchem-o_s_io"},
+//			new String[] {"costeley-la_terre_les"},
+//			new String[] {"ferabosco-io_mi_son"},
+//			new String[] {"lasso-appariran_per_me"},
+// 			new String[] {"lasso-avecque_vous"},
+//			new String[] {"lasso-madonna_mia_pieta"},
+//			new String[] {"lasso-poi_che_l"},
+//			new String[] {"rore-anchor_che_col"},
 			
 			// Other
 //			new String[] {"je_prens_en_gre-tab-rests", "je_prens_en_gre-SATB"},
