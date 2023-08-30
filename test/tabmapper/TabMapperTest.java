@@ -225,62 +225,66 @@ public class TabMapperTest extends TestCase {
 	public void testGetCheapestMapping() {
 		List<Integer[]> lastPitchInAvailableVoices = new ArrayList<>();
 		lastPitchInAvailableVoices.add(new Integer[]{3, 48});
-		lastPitchInAvailableVoices.add(new Integer[]{2, 56});
-		lastPitchInAvailableVoices.add(new Integer[]{1, 60});
-		lastPitchInAvailableVoices.add(new Integer[]{0, 64});
-
-		List<List<Integer>> allPitches = new ArrayList<>();
-		allPitches.add(Arrays.asList(new Integer[]{62, null, null, null}));
-		allPitches.add(Arrays.asList(new Integer[]{48, 61, null, null}));
-		allPitches.add(Arrays.asList(new Integer[]{48, 56, 60, null}));
-		allPitches.add(Arrays.asList(new Integer[]{50, 56, 61, 65}));
+		lastPitchInAvailableVoices.add(new Integer[]{2, 58});
+		lastPitchInAvailableVoices.add(new Integer[]{1, 62});
+		lastPitchInAvailableVoices.add(new Integer[]{0, 72});
 
 		List<Integer[]> lastPitchInAvailableVoicesSNU = new ArrayList<>();
 		lastPitchInAvailableVoicesSNU.add(new Integer[]{3, 48});
-		lastPitchInAvailableVoicesSNU.add(new Integer[]{2, 56});
-		lastPitchInAvailableVoicesSNU.add(new Integer[]{1, 60});
-		lastPitchInAvailableVoicesSNU.add(new Integer[]{0, 60});
+		lastPitchInAvailableVoicesSNU.add(new Integer[]{2, 58});
+		lastPitchInAvailableVoicesSNU.add(new Integer[]{1, 62});
+		lastPitchInAvailableVoicesSNU.add(new Integer[]{0, 62});
+
+		List<List<Integer>> allPitches = new ArrayList<>();
+		allPitches.add(Arrays.asList(new Integer[]{64, null, null, null}));
+		allPitches.add(Arrays.asList(new Integer[]{48, 61, null, null}));
+		allPitches.add(Arrays.asList(new Integer[]{62, 67, 72, null}));
+		allPitches.add(Arrays.asList(new Integer[]{50, 56, 61, 68}));
 
 		List<List<Integer[]>> comb = ToolBox.getCombinations(lastPitchInAvailableVoices.size());
 
 		List<List<Integer[]>> expected = new ArrayList<>();	
 		List<Integer[]> one = new ArrayList<>();
-		one.add(new Integer[]{1, 62, 2});
+		one.add(new Integer[]{1, 64, 2});
 		expected.add(one);
 		List<Integer[]> two = new ArrayList<>();
 		two.add(new Integer[]{3, 48, 0});
 		two.add(new Integer[]{1, 61, 1});
 		expected.add(two);
+		// NB: there are two mappings possible for which the cost is 9; this is 
+		// the one that has the most occurrences of cost 0 
 		List<Integer[]> three = new ArrayList<>();
-		three.add(new Integer[]{3, 48, 0});
-		three.add(new Integer[]{2, 56, 0});
-		three.add(new Integer[]{1, 60, 0});
+		three.add(new Integer[]{2, 67, 9});
+		three.add(new Integer[]{1, 62, 0});
+		three.add(new Integer[]{0, 72, 0});
 		expected.add(three);
 		List<Integer[]> four = new ArrayList<>();
 		four.add(new Integer[]{3, 50, 2});
-		four.add(new Integer[]{2, 56, 0});
+		four.add(new Integer[]{2, 56, 2});
 		four.add(new Integer[]{1, 61, 1});
-		four.add(new Integer[]{0, 65, 1});
+		four.add(new Integer[]{0, 68, 4});
 		expected.add(four);
 
 		// With SNU	
 		one = new ArrayList<>();
-		one.add(new Integer[]{1, 62, 2});
+		one.add(new Integer[]{1, 64, 2});
 		expected.add(one);
 		two = new ArrayList<>();
 		two.add(new Integer[]{3, 48, 0});
 		two.add(new Integer[]{1, 61, 1});
 		expected.add(two);
+		// NB: there are six mappings possible for which the cost is 19, four of 
+		// which have one occurrence of cost 0; this is the one calculated first
 		three = new ArrayList<>();
-		three.add(new Integer[]{3, 48, 0});
-		three.add(new Integer[]{2, 56, 0});
-		three.add(new Integer[]{1, 60, 0});
+		three.add(new Integer[]{2, 67, 9});
+		three.add(new Integer[]{1, 72, 10});
+		three.add(new Integer[]{0, 62, 0});
 		expected.add(three);
 		four = new ArrayList<>();
 		four.add(new Integer[]{3, 50, 2});
-		four.add(new Integer[]{2, 56, 0});
+		four.add(new Integer[]{2, 56, 2});
 		four.add(new Integer[]{1, 61, 1});
-		four.add(new Integer[]{0, 65, 5});
+		four.add(new Integer[]{0, 68, 6});
 		expected.add(four);
 
 		List<List<Integer[]>> actual = new ArrayList<>();

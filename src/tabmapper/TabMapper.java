@@ -747,11 +747,11 @@ public class TabMapper {
 						cheapestMappingTotal = (List<Integer[]>) completedMapping.get(2);
 						numMismatches += cheapestMappingTotal.size();
 						
+						Rational o = tl.getMetricPosition(currMask[ONSET_IND])[1];
+						o.reduce();
+						String oStr = !o.equals(Rational.ZERO) ? o.toString() : "0";
 						res.append("no match for pitches " + pitchesNotInMIDIOriginal + " at indices " + 
-							indPitchesNotInMIDI + " (bar " + currMask[0] + "; onset " + 
-							tl.getMetricPosition(currMask[ONSET_IND])[1]	
-//							Utils.getMetricPosition(new Rational(currMask[ONSET_IND], SMALLEST_DUR), meterInfo)[1] 
-							+ ")" + "\r\n");
+							indPitchesNotInMIDI + " (bar " + currMask[0] + "; onset " + oStr + ")" + "\r\n");
 						res.append("pitches in tab chord : " + pitchesTab + "\r\n");
 						res.append("cheapest mapping (total cost " + 
 							ToolBox.sumListInteger(ToolBox.getItemsAtIndex(cheapestMappingTotal, 2))+ 
@@ -1542,11 +1542,6 @@ public class TabMapper {
 			for (int k = 0; k < subsetsOfPitchesNotInMIDI.size(); k++) {
 				List<Integer[]> currCheapestMapping = 
 					getCheapestMapping(subsetsOfPitchesNotInMIDI.get(k), comb, lastPitchInAvailableVoices);
-//				System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaa");
-//				System.out.println(currOnset);
-//				System.out.println(pitchesTab);
-//				System.out.println(pitchesGT);
-//				System.out.println(currCheapestMapping);
 				int currCheapest = 
 					ToolBox.sumListInteger(ToolBox.getItemsAtIndex(currCheapestMapping, 2));
 				if (currCheapest < cheapest) {
@@ -1645,40 +1640,23 @@ public class TabMapper {
 							pitch, -1, null, keySig, mpcGrid, altGrid, pcGrid, null
 						).get(0);
 						pName = paPitch[0];
-						System.out.println("pitch in tab:");
-						System.out.println(paPitch[0]);
-						System.out.println(paPitch[1]);
-					
-						System.out.println("pitch in GT:");
+
 						if (pitchesGT.contains(pitch + 1)) {
 							String[] paSemitoneAbove = (String[]) MEIExport.spellPitch(
 								pitch+1, -1, null, keySig, mpcGrid, altGrid, pcGrid, null
 							).get(0);
 							pNameOtherNote = paSemitoneAbove[0];
-							System.out.println(paSemitoneAbove[0]);
-							System.out.println(paSemitoneAbove[1]);
 						}
 						else {
 							String[] paSemitoneBelow = (String[]) MEIExport.spellPitch(
 								pitch-1, -1, null, keySig, mpcGrid, altGrid, pcGrid, null
 							).get(0);
 							pNameOtherNote = paSemitoneBelow[0];
-							System.out.println(paSemitoneBelow[0]);
-							System.out.println(paSemitoneBelow[1]);
 						}
 					}
 					if (pName != null && pName.equals(pNameOtherNote)) {
 						fictaInd.add(pitchInd);
-						System.out.println("FICTA");
 						currOnset.reduce();
-						System.out.println(currOnset);
-						System.out.println(pitchesGT);
-						System.out.println(pitch);
-						System.out.println(base);
-						System.out.println(keySig);
-						System.out.println(mode);
-						System.out.println("---");
-//						System.exit(0);
 					}
 					// If not ficta: adaptation
 					else {
@@ -2061,11 +2039,13 @@ public class TabMapper {
 	 * @param pitches
 	 * @param comb
 	 * @param lastPitchInAvailableVoices
-	 * @return A List<Integer[]> representing the cheapest mapping for all pitches, and each element 
+	 * @return A List<Integer[]> representing the cheapest mapping for all pitches, each element 
 	 *         of which contains
-	 *         as element (0): the voice the pitch is mapped to
-	 *         as element (1): the pitch 
-	 *         as element (2): the cost () of mapping the pitch to the voice
+	 *         <ul>
+	 *         <li>As element (0): the voice the pitch is mapped to.</li>
+	 *         <li>As element (1): the pitch.</li> 
+	 *         <li>As element (2): the cost (in semitones) of mapping the pitch to the voice.</li>
+	 *         </ul>
 	 */
 	// TESTED
 	static List<Integer[]> getCheapestMapping(List<Integer> pitches, 
@@ -2080,7 +2060,6 @@ public class TabMapper {
 			// at index 0: the index in lastPitchInAvailableVoices (gives [voice, pitch])
 			// at index 1: the index in pitchesNotInMIDI (gives [pitch])
 			for (Integer[] c : currComb) {
-//				System.out.println(Arrays.toString(c));
 				int firstListInd = c[0];
 				int secondListInd = c[1];
 				if (pitches.get(secondListInd) != null) {
@@ -2099,9 +2078,22 @@ public class TabMapper {
 				}
 			}
 			int currTotalCost = ToolBox.sumListInteger(ToolBox.getItemsAtIndex(currMapping, 2));
-			if (currTotalCost < cheapest) {
-				cheapest = currTotalCost;
-				cheapestMapping = currMapping;
+
+			if (currTotalCost <= cheapest) {
+				if (currTotalCost < cheapest) {
+					cheapest = currTotalCost;
+					cheapestMapping = currMapping;
+				}
+				// In case of a tie, prefer the mapping that has more repetitions (if any)
+				else if (currTotalCost == cheapest) {
+					int numZerosInCheapest = Collections.frequency(ToolBox.getItemsAtIndex(cheapestMapping, 2), 0);
+					int numZerosInCurr = Collections.frequency(ToolBox.getItemsAtIndex(currMapping, 2), 0);
+					if (numZerosInCurr > numZerosInCheapest) {
+						cheapest = currTotalCost;
+						cheapestMapping = currMapping;
+					}
+				}
+
 //				if (currCheapest == 0) {
 //					numOfTieRepetitions++;
 //				}
@@ -2110,12 +2102,6 @@ public class TabMapper {
 //						numOfTieRepetitions++;
 //					}
 //				}
-				
-			}
-///-			System.out.println("currCost = " + currTotalCost);
-///-			System.out.println("currMapping:");
-			for(Integer[] in : currMapping) {
-///-				System.out.println(Arrays.toString(in));
 			}
 		}
 		return cheapestMapping;
@@ -2184,20 +2170,20 @@ public class TabMapper {
 			
 			// JosquIntab
 			// a. Mass sections
-//			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"}, // tab bar:metric bar 3:2
-//			new String[]{"5266_15_cum_sancto_spiritu_desprez", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"}, // tab bar:metric bar 3:2
-//			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-1", "Jos0303c-Missa_De_beata_virgine-Credo-1-102"},
+			new String[]{"4471_40_cum_sancto_spiritu", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"}, // tab bar:metric bar 3:2
+			new String[]{"5266_15_cum_sancto_spiritu_desprez", "Jos0303b-Missa_De_beata_virgine-Gloria-222-248"}, // tab bar:metric bar 3:2
+			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-1", "Jos0303c-Missa_De_beata_virgine-Credo-1-102"},
 			// JEP (has imprecise triplet onset(s))
-//			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-2", "Jos0303c-Missa_De_beata_virgine-Credo-103-159"},
-//			new String[]{"5106_10_misa_de_faysan_regres_2_gloria", "Jos0801b-Missa_Faisant_regretz-Gloria-37-94"},
-//			new String[]{"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-1", "Jos0801d-Missa_Faisant_regretz-Sanctus-1-22"},
-//			new String[]{"5107_11_misa_de_faysan_regres_pleni", "Jos0801d-Missa_Faisant_regretz-Sanctus-23-67"},
-//			new String[]{"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-2", "Jos0801d-Missa_Faisant_regretz-Sanctus-68-97"},
-//			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-1", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-1-17"},
-//			new String[]{"3584_001_pleni_missa_hercules_josquin", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-18-56"},
-//			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-2", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-57-88"},
-//			new String[]{"3585_002_benedictus_de_missa_pange_lingua_josquin", "Jos0403d-Missa_Pange_lingua-Sanctus-139-186"},
-//			new String[]{"5190_17_cum_spiritu_sanctu_from_missa_sine_nomine", "Jos1202b-Missa_Sine_nomine-Gloria-103-132"},
+			new String[]{"3643_066_credo_de_beata_virgine_jospuin_T-2", "Jos0303c-Missa_De_beata_virgine-Credo-103-159"},
+			new String[]{"5106_10_misa_de_faysan_regres_2_gloria", "Jos0801b-Missa_Faisant_regretz-Gloria-37-94"},
+			new String[]{"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-1", "Jos0801d-Missa_Faisant_regretz-Sanctus-1-22"},
+			new String[]{"5107_11_misa_de_faysan_regres_pleni", "Jos0801d-Missa_Faisant_regretz-Sanctus-23-67"},
+			new String[]{"5189_16_sanctus_and_hosanna_from_missa_faisant_regrets-2", "Jos0801d-Missa_Faisant_regretz-Sanctus-68-97"},
+			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-1", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-1-17"},
+			new String[]{"3584_001_pleni_missa_hercules_josquin", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-18-56"},
+			new String[]{"5188_15_sanctus_and_hosanna_from_missa_hercules-2", "Jos1101d-Missa_Hercules_dux_Ferrarie-Sanctus-57-88"},
+			new String[]{"3585_002_benedictus_de_missa_pange_lingua_josquin", "Jos0403d-Missa_Pange_lingua-Sanctus-139-186"},
+			new String[]{"5190_17_cum_spiritu_sanctu_from_missa_sine_nomine", "Jos1202b-Missa_Sine_nomine-Gloria-103-132"},
 			
 			// b. Motets
 			// 5254_03_benedicta_es_coelorum_desprez-1 has 3(Q) triplets in bb. 23, 27, 70
@@ -2207,57 +2193,56 @@ public class TabMapper {
 			// 4465_33-34_memor_esto-2 has 3(Q) triplets in bb. 64-74, 100-102, 109-113
 			// 5255_04_stabat_mater_dolorosa_desprez-2 has 3(Q) triplets in bb. 71-75, 77, 79-81, 83-85
 			// JEP (has imprecise triplet onset(s))		
-			new String[]{"5265_14_absalon_fili_me_desprez", "Jos1401-Absalon_fili_mi"},
-			// JEP (has imprecise triplet onset(s))		
-			new String[]{"3647_070_benedicta_est_coelorum_josquin_T", "Jos2313-Benedicta_es_celorum-1-107"},
-			// JEP (has imprecise triplet onset(s))
-			new String[]{"4964_01a_benedictum_es_coelorum_josquin", "Jos2313-Benedicta_es_celorum-1-107"},
-			new String[]{"4965_01b_per_illud_ave_josquin", "Jos2313-Benedicta_es_celorum-108-135"},
-			new String[]{"4966_01c_nunc_mater_josquin", "Jos2313-Benedicta_es_celorum-136-176"},
-			// JEP (has imprecise triplet onset(s))
-			new String[]{"5254_03_benedicta_es_coelorum_desprez-1", "Jos2313-Benedicta_es_celorum-1-107"}, // check triplets in tab 
-			new String[]{"5254_03_benedicta_es_coelorum_desprez-2", "Jos2313-Benedicta_es_celorum-108-135"},
-			new String[]{"5254_03_benedicta_es_coelorum_desprez-3", "Jos2313-Benedicta_es_celorum-136-176"},
-			// TODO 0, 1, 32, 33, 36, 38	
-			// JEP (has imprecise triplet onset(s))
-			new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
-			// TODO 91, 93, 222, 226, 231, 234
-			new String[]{"5702_benedicta-2", "Jos2313-Benedicta_es_celorum-108-135"},
-			new String[]{"5702_benedicta-3", "Jos2313-Benedicta_es_celorum-136-176"},
-			new String[]{"3591_008_fecit_potentiam_josquin", "Jos2004-Magnificat_Quarti_toni-Verse_6_Fecit_potentiam"},
-			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-1", "Jos1704-In_exitu_Israel_de_Egypto-1-143"},
-			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-2", "Jos1704-In_exitu_Israel_de_Egypto-144-280"},
-			// JEP (has imprecise triplet onset(s)) // hier
-			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
-			new String[]{"5256_05_inviolata_integra_desprez-1", "Jos2404-Inviolata_integra_et_casta_es-1-63"},
-			// JEP (has imprecise triplet onset(s))
-			new String[]{"5256_05_inviolata_integra_desprez-2", "Jos2404-Inviolata_integra_et_casta_es-64-105"},
-			// JEP (has imprecise triplet onset(s))
-			new String[]{"5256_05_inviolata_integra_desprez-3", "Jos2404-Inviolata_integra_et_casta_es-106-144"},
-			new String[]{"4465_33-34_memor_esto-1", "Jos1714-Memor_esto_verbi_tui-1-165"},
-			// JEP (has imprecise triplet onset(s)) // hier
-			new String[]{"4465_33-34_memor_esto-2", "Jos1714-Memor_esto_verbi_tui-166-325"},
-			new String[]{"932_milano_108_pater_noster_josquin-1", "Jos2009-Pater_noster-1-120"},
-			new String[]{"932_milano_108_pater_noster_josquin-2", "Jos2009-Pater_noster-121-198"},
-			new String[]{"5252_01_pater_noster_desprez-1", "Jos2009-Pater_noster-1-120"},
-			
-			new String[]{"5252_01_pater_noster_desprez-2", "Jos2009-Pater_noster-121-198"},
-			new String[]{"3649_072_praeter_rerum_seriem_josquin_T", "Jos2411-Preter_rerum_seriem-1-87"},
-			new String[]{"5253_02_praeter_rerum_seriem_desprez-1", "Jos2411-Preter_rerum_seriem-1-87"},
-			new String[]{"5253_02_praeter_rerum_seriem_desprez-2", "Jos2411-Preter_rerum_seriem-88-185"},
-			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-1", "Jos2411-Preter_rerum_seriem-1-87"},
-			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-2", "Jos2411-Preter_rerum_seriem-88-185"},	
-			new String[]{"1274_12_qui_habitat_in_adjutorio-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
-			// JEP (has imprecise triplet onset(s))
-			new String[]{"1274_12_qui_habitat_in_adjutorio-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
-			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
-			// JEP (has imprecise triplet onset(s))
-			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
-			// TODO 0, 1
-			new String[]{"933_milano_109_stabat_mater_dolorosa_josquin", "Jos2509-Stabat_mater__Comme_femme-1-88"},
-			new String[]{"5255_04_stabat_mater_dolorosa_desprez-1", "Jos2509-Stabat_mater__Comme_femme-1-88"},
-			// JEP (has imprecise triplet onset(s))
-			new String[]{"5255_04_stabat_mater_dolorosa_desprez-2", "Jos2509-Stabat_mater__Comme_femme-89-180"},
+//			new String[]{"5265_14_absalon_fili_me_desprez", "Jos1401-Absalon_fili_mi"},
+//			// JEP (has imprecise triplet onset(s))		
+//			new String[]{"3647_070_benedicta_est_coelorum_josquin_T", "Jos2313-Benedicta_es_celorum-1-107"},
+//			// JEP (has imprecise triplet onset(s))
+//			new String[]{"4964_01a_benedictum_es_coelorum_josquin", "Jos2313-Benedicta_es_celorum-1-107"},
+//			new String[]{"4965_01b_per_illud_ave_josquin", "Jos2313-Benedicta_es_celorum-108-135"},
+//			new String[]{"4966_01c_nunc_mater_josquin", "Jos2313-Benedicta_es_celorum-136-176"},
+//			// JEP (has imprecise triplet onset(s))
+//			new String[]{"5254_03_benedicta_es_coelorum_desprez-1", "Jos2313-Benedicta_es_celorum-1-107"}, // check triplets in tab 
+//			new String[]{"5254_03_benedicta_es_coelorum_desprez-2", "Jos2313-Benedicta_es_celorum-108-135"},
+//			new String[]{"5254_03_benedicta_es_coelorum_desprez-3", "Jos2313-Benedicta_es_celorum-136-176"},
+//			// TODO 0, 1, 32, 33, 36, 38	
+//			// JEP (has imprecise triplet onset(s))
+//			new String[]{"5702_benedicta-1", "Jos2313-Benedicta_es_celorum-1-107"},
+//			// TODO 91, 93, 222, 226, 231, 234
+//			new String[]{"5702_benedicta-2", "Jos2313-Benedicta_es_celorum-108-135"},
+//			new String[]{"5702_benedicta-3", "Jos2313-Benedicta_es_celorum-136-176"},
+//			new String[]{"3591_008_fecit_potentiam_josquin", "Jos2004-Magnificat_Quarti_toni-Verse_6_Fecit_potentiam"},
+//			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-1", "Jos1704-In_exitu_Israel_de_Egypto-1-143"},
+//			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-2", "Jos1704-In_exitu_Israel_de_Egypto-144-280"},
+//			// JEP (has imprecise triplet onset(s)) // hier
+//			new String[]{"5263_12_in_exitu_israel_de_egipto_desprez-3", "Jos1704-In_exitu_Israel_de_Egypto-281-401"},
+//			new String[]{"5256_05_inviolata_integra_desprez-1", "Jos2404-Inviolata_integra_et_casta_es-1-63"},
+//			// JEP (has imprecise triplet onset(s))
+//			new String[]{"5256_05_inviolata_integra_desprez-2", "Jos2404-Inviolata_integra_et_casta_es-64-105"},
+//			// JEP (has imprecise triplet onset(s))
+//			new String[]{"5256_05_inviolata_integra_desprez-3", "Jos2404-Inviolata_integra_et_casta_es-106-144"},
+//			new String[]{"4465_33-34_memor_esto-1", "Jos1714-Memor_esto_verbi_tui-1-165"},
+//			// JEP (has imprecise triplet onset(s)) // hier
+//			new String[]{"4465_33-34_memor_esto-2", "Jos1714-Memor_esto_verbi_tui-166-325"},
+//			new String[]{"932_milano_108_pater_noster_josquin-1", "Jos2009-Pater_noster-1-120"},
+//			new String[]{"932_milano_108_pater_noster_josquin-2", "Jos2009-Pater_noster-121-198"},
+//			new String[]{"5252_01_pater_noster_desprez-1", "Jos2009-Pater_noster-1-120"},
+//			new String[]{"5252_01_pater_noster_desprez-2", "Jos2009-Pater_noster-121-198"},
+//			new String[]{"3649_072_praeter_rerum_seriem_josquin_T", "Jos2411-Preter_rerum_seriem-1-87"},
+//			new String[]{"5253_02_praeter_rerum_seriem_desprez-1", "Jos2411-Preter_rerum_seriem-1-87"},
+//			new String[]{"5253_02_praeter_rerum_seriem_desprez-2", "Jos2411-Preter_rerum_seriem-88-185"},
+//			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-1", "Jos2411-Preter_rerum_seriem-1-87"},
+//			new String[]{"5694_03_motet_praeter_rerum_seriem_josquin-2", "Jos2411-Preter_rerum_seriem-88-185"},	
+//			new String[]{"1274_12_qui_habitat_in_adjutorio-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
+//			// JEP (has imprecise triplet onset(s))
+//			new String[]{"1274_12_qui_habitat_in_adjutorio-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
+//			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-1", "Jos1807-Qui_habitat_in_adjutorio_altissimi-1-155"},
+//			// JEP (has imprecise triplet onset(s))
+//			new String[]{"5264_13_qui_habitat_in_adjutorio_desprez-2", "Jos1807-Qui_habitat_in_adjutorio_altissimi-156-282"},
+//			// TODO 0, 1
+//			new String[]{"933_milano_109_stabat_mater_dolorosa_josquin", "Jos2509-Stabat_mater__Comme_femme-1-88"},
+//			new String[]{"5255_04_stabat_mater_dolorosa_desprez-1", "Jos2509-Stabat_mater__Comme_femme-1-88"},
+//			// JEP (has imprecise triplet onset(s))
+//			new String[]{"5255_04_stabat_mater_dolorosa_desprez-2", "Jos2509-Stabat_mater__Comme_femme-89-180"},
 
 			// c. Chansons
 //			new String[]{"4400_45_ach_unfall_was", "Jos2829-Qui_belles_amours"}, // barring messed up due to correction in bar 2 
