@@ -6,8 +6,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import de.uos.fmt.musitech.utility.math.Rational;
-import exports.MEIExport;
 import junit.framework.TestCase;
+import path.Path;
 import representations.Tablature;
 import representations.Transcription;
 import tools.ToolBox;
@@ -22,8 +22,10 @@ public class TabMapperTest extends TestCase {
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false);
 //		encodingTestpiece = new File(Runner.encodingsPathTest + "testpiece.tbp");
 //		midiTestpiece = new File(Runner.midiPathTest + "testpiece.mid");
-		encodingTestpiece = new File(MEIExport.rootDir + "data/annotated/encodings/test/" + "testpiece.tbp");
-		midiTestpiece = new File(MEIExport.rootDir + "data/annotated/MIDI/test/" + "testpiece.mid");
+		encodingTestpiece = 
+			new File(Path.ROOT_PATH_DEPLOYMENT_DEV + Path.ENCODINGS_REL_PATH + Path.TEST_DIR + "testpiece.tbp");
+		midiTestpiece = 
+			new File(Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_REL_PATH + Path.TEST_DIR + "testpiece.mid");
 	}
 
 	protected void tearDown() throws Exception {
