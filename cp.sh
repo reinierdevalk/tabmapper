@@ -1,40 +1,22 @@
 #!/bin/bash
 
-# Script that constructs the classpath from cp.txt
+# Script that constructs the classpath from cp.txt.
 
+code_path="F:/research/software/code/eclipse/"
+tabmapper_path="$code_path""tabmapper/"
 
-#CURR_DIR=$(pwd)
-
-CODE_PATH="F:/research/software/code/eclipse/"
-TABMAPPER_PATH=$CODE_PATH"tabmapper/"
-
-# Source config.cfg
-CONFIG_FILE="$TABMAPPER_PATH/config.cfg"
-if [ -f "$CONFIG_FILE" ]; then
-    source "$CONFIG_FILE"
-else
-    echo "Configuration file not found!"
-    exit 1
-fi
-
-
-## Define the code path
-#USER_CODE_PATH="$CODE_PATH"
-
-# Initialise classpath
+# 1. Initialise classpath
 classpath=""
 
-# Read each line from cp.txt, prepend CODE_PATH, 
+# 2. Read each line from cp.txt, prepend code_path, 
 # add semicolon, and append to classpath
 while IFS= read -r line; do
-    classpath+="$CODE_PATH$line;"
-done < "$TABMAPPER_PATH""cp.txt"
+    classpath+="$code_path""$line;"
+done < "$tabmapper_path""cp.txt"
 
-# Remove any carriage returns
+# 3. Remove any carriage returns; remove trailing semicolon
 classpath=$(echo "$classpath" | tr -d '\r')
-
-# Remove the trailing semicolon
 classpath=${classpath%;}
 
-# Output the constructed classpath
+# 4. Return the constructed classpath
 echo "$classpath"

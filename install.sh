@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Script that installs tabmapper on your system. It must
-# called from the same folder that folds config.cfg. 
+# called from the same folder that folds config.cfg, cp.sh, 
+# and cp.txt. 
 
 # NB: All line endings in a script must be unix style, so that 
 # calling the script in bash does not lead to the following error:
@@ -21,70 +22,60 @@
 # }
 
 
-PLACEHOLDER="code_path_placeholder"
+remove_carriage_returns() {
+    local file="$1"
+    # Remove any carriage returns
+    if grep -q $'\r' "$file"; then
+        tr -d '\r' <"$file" >file.new && mv file.new "$file"
+    fi
+}
+
+
+handle_file() {
+    local file="$1"
+    local make_executable="$2"
+    # If the file exists, handle it
+    if [ -f "$file" ]; then
+        # Remove any carriage returns
+        remove_carriage_returns "$file"
+
+        # Make executable (if applicable)
+        if [ "$make_executable" -eq 1 ]; then
+            chmod +x "$file"
+        fi
+    # If not, return error
+    else
+        echo "File not found: $file."
+        exit 1
+    fi
+}
+
 
 echo "Installing ..."
 
-# 1. Handle config.cfg
+# 1. Handle files
+config_file="$(pwd)""/config.cfg"
+handle_file "$config_file" 0
+cp_file="cp.sh"
+handle_file "$cp_file" 1
+tm_file="tabmapper"
+handle_file "$tm_file" 1
+
+# 2. Source config.cfg to make CODE_PATH and PATH_PATH available locally
 echo "... reading configuration file ... "
-CONFIG_FILE="$(pwd)/config.cfg"
-# If config.cgf exists
-if [ -f "$CONFIG_FILE" ]; then
-    # Remove any carriage returns
-    if grep -q $'\r' "$CONFIG_FILE"; then
-        tr -d '\r' <"$CONFIG_FILE" >config.new && mv config.new "$CONFIG_FILE"
-    fi
-
-    # Source config.cfg (make its variables CODE_PATH and PATH_PATH available here)
-    source "$CONFIG_FILE"
-else
-    echo "Configuration file not found!"
-    exit 1
-fi
-
-echo "... setting paths ... "
-
-#echo $CODE_PATH
-CODE_PATH_CLN=$CODE_PATH 
+source "$config_file"
 # Escape forward slashes in CODE_PATH
-CODE_PATH_ESC=$(echo "$CODE_PATH" | sed 's/\//\\\//g')
-#echo $CODE_PATH_ESC
+code_path_esc=$(echo "$CODE_PATH" | sed 's/\//\\\//g')
+#path_path_esc=$(echo "$PATH_PATH" | sed 's/\//\\\//g')
 
+# 3. Set CODE_PATH (replace placeholder with escaped CODE_PATH)
+echo "... setting path ... "
+placeholder="code_path_placeholder"
+sed -i "s/$placeholder/$code_path_esc/g" "$cp_file"
+sed -i "s/$placeholder/$code_path_esc/g" "$tm_file"        
 
-# 2. Handle cp.sh
-# Set code path, i.e., replace placeholder with escaped CODE_PATH
-FILE="cp.sh"
-#REPLACEMENT=$(printf '%s\n' "$CODE_PATH" | sed 's/[&/]/\\&/g')
-#sed -i "s/$PLACEHOLDER/$REPLACEMENT/g" "$FILE"
-sed -i "s/$PLACEHOLDER/$CODE_PATH_ESC/g" "$FILE"
-
-# Remove any carriage returns
-if grep -q $'\r' "$FILE"; then
-    tr -d '\r' <"$FILE" >cp.new && mv cp.new "$FILE"
-fi
-
-# Make executable
-chmod +x "$FILE"
-
-
-# 3. Handle tabmapper
-echo "... copying tabmapper to ""$PATH_PATH"" ..."
-# Set code path, i.e., replace placeholder with escaped CODE_PATH
-FILE="tabmapper"
-#REPLACEMENT=$(printf '%s\n' "$CODE_PATH" | sed 's/[&/]/\\&/g')
-#sed -i "s/$PLACEHOLDER/$REPLACEMENT/g" "$FILE"
-sed -i "s/$PLACEHOLDER/$CODE_PATH_ESC/g" "$FILE"
-
-# Remove any carriage returns
-if grep -q $'\r' "$FILE"; then
-    tr -d '\r' <"$FILE" >tabmapper.new && mv tabmapper.new "$FILE"
-fi
-
-# Make executable
-chmod +x "$FILE"
-
-# Copy to global environment
-cp "$FILE" "$PATH_PATH"
-
+# 4. Copy tabmapper to global environment
+echo "... copying tabmapper to "$PATH_PATH" ..."
+cp "$tm_file" "$PATH_PATH"
 
 echo "... done!"

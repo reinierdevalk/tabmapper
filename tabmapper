@@ -1,31 +1,33 @@
 #!/bin/bash
 
-TABMAPPER_PATH="F:/research/software/code/eclipse/""tabmapper/"
+# Script that runs TabMapper.
 
-DATA_IN=$TABMAPPER_PATH"data/in/"
-DATA_IN_TAB=$TABMAPPER_PATH"data/in/tab/"
-DATA_IN_MIDI=$TABMAPPER_PATH"data/in/MIDI/"
-DATA_OUT=$TABMAPPER_PATH"data/out/"
+code_path="F:/research/software/code/eclipse/"
+tabmapper_path="$code_path""tabmapper/"
 
-# 2. Create data folders
-if [ ! -d $DATA_IN ]; then
-    mkdir -p $DATA_IN
+# 1. Create data folders
+data_in="$tabmapper_path""data/in/"
+data_in_tab="$tabmapper_path""data/in/tab/"
+data_in_MIDI="$tabmapper_path""data/in/MIDI/"
+data_out="$tabmapper_path""data/out/"
+
+if [ ! -d "$data_in" ]; then
+    mkdir -p "$data_in"
 fi
 
-if [ ! -d $DATA_IN_TAB ]; then
-    mkdir -p $DATA_IN_TAB
+if [ ! -d "$data_in_tab" ]; then
+    mkdir -p "$data_in_tab"
 fi
 
-if [ ! -d $DATA_IN_MIDI ]; then
-    mkdir -p $DATA_IN_MIDI
+if [ ! -d "$data_in_MIDI" ]; then
+    mkdir -p "$data_in_MIDI"
 fi
 
-if [ ! -d $DATA_OUT ]; then
-    mkdir -p $DATA_OUT
+if [ ! -d "$data_out" ]; then
+    mkdir -p "$data_out"
 fi
 
-#echo $CODE_PATH"cp.sh"
 
-# 3. Call java with the arguments given to tabmapper
+# 2. Call java with the arguments given to tabmapper
 # NB. This command can also be called directly from the CLI
-java -cp $($TABMAPPER_PATH"cp.sh") tabmapper.TabMapper $1 $2 $3
+java -cp $("$tabmapper_path""cp.sh") tabmapper.TabMapper $1 $2 $3
