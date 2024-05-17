@@ -1,33 +1,30 @@
-0. Create, in <code_path>, the folder for the code 
-- e.g., C:/Users/Reinier/Desktop/code
+0. Create a folder that will hold the code (<code_path>).
 
-1. Clone the following repositories into the code folder  
-- https://github.com/reinierdevalk/tabmapper/  
-- https://github.com/reinierdevalk/utils/ 
-- https://github.com/reinierdevalk/formats-representations/ 
+1. Clone the following repositories into <code_path>:
+   - https://github.com/reinierdevalk/tabmapper/  
+   - https://github.com/reinierdevalk/utils/ 
+   - https://github.com/reinierdevalk/formats-representations/ 
 
-2. Go into the tabmapper/ folder; you won't need to interfere with the 
-   contents of the other two folders.
-  $ cd <code_path>/tabmapper
+2. cd into the tabmapper/ folder; you won't need to interfere with the 
+   contents of the other two folders:
+   $ cd <code_path>/tabmapper
   
-3. Open cp.sh, a script that constructs the classpath needed for the Java code to run.
-- replace the value of the CODE_PATH variable with your full <code_path>
+3. Open config.cfg and 
+   - replace the default value of the CODE_PATH variable with <code_path>. 
+   - replace the default value of the PATH_PATH variable with a directory
+     that is on the $PATH variable. Recommended is /usr/local/bin/.
+     You can check which directories are on the PATH variable as follows 
+     $ echo $PATH
 
-4. Make sure that tabmapper, the script to run, is accessible from anywhere on your
-   computer (and not only from <code_path>/tabmapper)
-- copy the script to usr/local/bin/ (or any directory that is already on the PATH) 
-  $ cp tabmapper /usr/local/bin/
-- ensure that the script has execute permissions
-  $ chmod +x /usr/local/bin/tabmapper
-- the directories in the PATH can be shown with  
-  $ echo $PATH
+4. Install tabmapper on your computer by running the install.sh script: 
+   $ bash install.sh
 
-5. Run TabMapper
-  $ bash tabmapper.sh
-
-5. If you want to run TabMapper from anywhere on your computer
+5. Run tabmapper. This can be done from any directory on your computer.
 
 
+ 
+
+ 
 5. When running TabMapper for the first time, the folder tabmapper/data/ and 
    its subfolders are created. Any of the folders in this folder structure are 
    recreated whenever they have been deleted and TabMapper is run again. 
