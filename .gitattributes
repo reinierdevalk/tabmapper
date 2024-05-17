@@ -2,3 +2,4 @@
 * .txt	eol=lf
 * .sh	eol=lf
 * .cfg	eol=lf
+* .md	eol=lf
