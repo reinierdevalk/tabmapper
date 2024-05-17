@@ -20,6 +20,7 @@
    $ bash install.sh
 
 5. Run tabmapper. This can be done from any directory on your computer.
+   tabmapper takes ...
 
 
  
