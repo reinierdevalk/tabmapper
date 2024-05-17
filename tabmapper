@@ -5,29 +5,6 @@
 code_path="F:/research/software/code/eclipse/"
 tabmapper_path="$code_path""tabmapper/"
 
-# 1. Create data folders
-data_in="$tabmapper_path""data/in/"
-data_in_tab="$tabmapper_path""data/in/tab/"
-data_in_MIDI="$tabmapper_path""data/in/MIDI/"
-data_out="$tabmapper_path""data/out/"
-
-if [ ! -d "$data_in" ]; then
-    mkdir -p "$data_in"
-fi
-
-if [ ! -d "$data_in_tab" ]; then
-    mkdir -p "$data_in_tab"
-fi
-
-if [ ! -d "$data_in_MIDI" ]; then
-    mkdir -p "$data_in_MIDI"
-fi
-
-if [ ! -d "$data_out" ]; then
-    mkdir -p "$data_out"
-fi
-
-
-# 2. Call java with the arguments given to tabmapper
+# Call java with the arguments given to tabmapper
 # NB. This command can also be called directly from the CLI
 java -cp $("$tabmapper_path""cp.sh") tabmapper.TabMapper $1 $2 $3
