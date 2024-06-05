@@ -8,10 +8,10 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="test"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/utils"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/formats-representations"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/representations"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/analysis"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/path"/>
 	<classpathentry kind="lib" path="/utils/lib/musitech.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/formats"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

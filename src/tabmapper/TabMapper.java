@@ -5,30 +5,31 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import analysis.Analyser;
+import conversion.imports.MIDIImport;
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationSystem;
 import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
-import exports.MEIExport;
-import exports.MIDIExport;
-import imports.MIDIImport;
-import path.Path;
-import representations.Tablature;
-import representations.Transcription;
-import structure.ScoreMetricalTimeLine;
-import structure.ScorePiece;
-import structure.Timeline;
-import tbp.Encoding;
-import tbp.RhythmSymbol;
+import conversion.exports.MEIExport;
+import conversion.exports.MIDIExport;
+import external.Tablature;
+import external.Transcription;
+import internal.core.Encoding;
+import internal.core.ScorePiece;
+import internal.structure.ScoreMetricalTimeLine;
+import internal.structure.Timeline;
+import tbp.symbols.RhythmSymbol;
 import tools.ToolBox;
 import tools.labels.LabelTools;
 import tools.music.PitchKeyTools;
 import tools.music.TimeMeterTools;
+import tools.path.PathTools;
 
 public class TabMapper {
 	private static final int BAR_IND = 0;
@@ -36,20 +37,23 @@ public class TabMapper {
 	public static final int SMALLEST_DUR = Tablature.SRV_DEN;
 	private static final int NUM_COURSES = 6;
 	private static enum Connection {LEFT, RIGHT};
-	private static StringBuffer resultsOverAllPieces;
-	private static List<String> shortNames;
-//	private static double[][] resultsOverAllPiecesArr;
-	private static String[][] resultsOverAllPiecesArrStr;
-	private static Integer[] intsToAvg;
-	private static Double[] doublesToAvg;
 	private static final List<String> COLS = Arrays.asList(new String[]{
 		"piece", "N_model", "N_intab", 
 		"M", "M_o", "M_r", "M_f", "M_a",
-		"m", "m_oa", "m_a", "p_o" // munch
+		"m", "m_oa", "m_a", "p_o"
 	});
+	private static final String TAB_DIR = "in/tab/";
+	private static final String MIDI_DIR = "in/MIDI/";
+	private static final String OUT_DIR = "out/";
 
+	private static StringBuffer resultsOverAllPieces;
+	private static String[][] resultsOverAllPiecesArrStr;
+	private static Integer[] intsToAvg;
+	private static Double[] doublesToAvg;
+	private static List<String> shortNames;
 	private static int totalNumNotes = 0;
-
+	private static List<Integer> models = new ArrayList<>();
+	private static List<Integer> modelsBnp = new ArrayList<>();
 
 	private static final List<Integer> MAJOR = Arrays.asList(new Integer[]{0, 2, 4, 5, 7, 9, 11});
 	private static final List<Integer> MINOR = Arrays.asList(new Integer[]{0, 2, 3, 5, 7, 8, 10});
@@ -149,8 +153,6 @@ public class TabMapper {
 	});
 
 
-	static List<Integer> models = new ArrayList<>();
-	static List<Integer> modelsBnp = new ArrayList<>();
 	public static void main(String[] args) {
 		String path = "F:/research/projects/byrd/";
 //		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
@@ -167,22 +169,24 @@ public class TabMapper {
 //		path = "F:/research/data/annotated/tabmapper/josquin-int/";
 		path = "C:/Users/Reinier/Desktop/olja-thesis/";
 
-		String tabDir = "in/tab/";
-		String midiDir = "in/MIDI/";
-		String mappedDir = "out/";
-		
-		System.out.println("YES!");
-		System.out.println(args[0]);
-		System.out.println(args[1]);
-		System.out.println(args[2]);
+		Map<String, String> paths = PathTools.getPaths();
+		String psp = PathTools.getPathString(Arrays.asList(
+			paths.get("CODE_PATH"),
+			"formats-representations",
+			"py"
+		));
+		for (Map.Entry<String, String> entry : paths.entrySet()) {
+			System.out.println(entry.getKey() + " -- " + entry.getValue());
+		}
 		System.exit(0);
-		
-		boolean includeOrn = true; // YES
+
 		Connection connection = Connection.RIGHT;
-		boolean grandStaff = true; // YES
-		boolean tabOnTop = false; // YES
-		boolean completeDurations = false; // YES
-		
+		boolean includeOrn = true;
+		boolean grandStaff = true;
+		boolean tabOnTop = false;
+		boolean completeDurations = false;
+
+		// For running manually
 		List<String[]> pieces = getPieces();
 		List<String> skip = getPiecesToSkip();
 
@@ -197,30 +201,41 @@ public class TabMapper {
 
 		int numCols = COLS.size();
 		List<Integer> doubleInds = 
-//			IntStream.rangeClosed(numCols-3, numCols-1).boxed().collect(Collectors.toList()); // munch
 			IntStream.rangeClosed(numCols-4, numCols-1).boxed().collect(Collectors.toList());
 		List<Integer> colsToSkip = Arrays.asList(new Integer[]{0});
 		List<Object> listsToAvg = Analyser.getListsToAvg(numCols, doubleInds, colsToSkip);
 		intsToAvg = (Integer[]) listsToAvg.get(0);
 		doublesToAvg = (Double[]) listsToAvg.get(1);
 
-
-
 		if (args.length > 0) {
-			tabDir = "in/tab/";
-			midiDir = "in/MIDI/";
-			mappedDir = "out/mapped/";
 			// Path
 //			path = args[args.length-2];
 			path = "user/";
+			path = "";
 			if (!path.endsWith("/")) {
 				path += "/";
 			}
+//			path = PathTools.getCodeRootPath().toString();
+			System.out.println("YES!");
+			System.out.println(path);
+			System.exit(0);
+			
 //			MEIExport.setRootDir(path); // TODO fix; commented out to make the non-CLI version runnable
 			// Uncomment if the template.xml file is placed in the same dir as pieces.csv (args[1])
 //			MEIExport.MEITemplatePath = path; 
 			
-			System.out.println(path);
+//			Path directoryPath = Paths.get("/path/to/your/directory");
+//	        
+//			// Check if the directory exists and is indeed a directory
+//			if (Files.exists(directoryPath) && Files.isDirectory(directoryPath)) {
+//				try (Stream<Path> paths = Files.list(directoryPath)) {
+//					paths.forEach(path -> System.out.println(path.getFileName()));
+//				} catch (IOException e) {
+//					System.err.println("An I/O error occurred: " + e.getMessage());
+//				}
+//			} else {
+//				System.out.println("The specified path is not a directory or does not exist.");
+//			}
 			
 			// Pieces
 			pieces = new ArrayList<>();
@@ -330,12 +345,9 @@ public class TabMapper {
 //			System.out.println(includeOrn);
 //			System.out.println(addDuration);
 //			System.exit(0);
-		}
-		
-		MEIExport.setPythonScriptPath(
-			ToolBox.pathify(new String[]{ToolBox.pathify(new String[]{Path.ROOT_PATH, Path.CODE_REL_PATH}), 
-			"formats-representations/py/"}
-		));
+		}		
+				
+		MEIExport.setPythonScriptPath(psp);
 
 //		System.out.println(tabOnTop);
 //		System.out.println(grandStaff);
@@ -360,7 +372,7 @@ public class TabMapper {
 //			}
 
 			// Make tab; make model transcription
-			Tablature tab = new Tablature(new File(path + tabDir + tabName + Encoding.EXTENSION));
+			Tablature tab = new Tablature(new File(path + TAB_DIR + tabName + Encoding.EXTENSION));
 //			Tablature tab = new Tablature(new File(path + "tab/" + tabName + Encoding.EXTENSION), false);
 //			List<Integer[]> mapp = tab.mapTabBarsToMetricBars();
 //			for (Integer[] in : mapp) {
@@ -368,7 +380,7 @@ public class TabMapper {
 //			}
 
 			Transcription model = new Transcription(
-				tab.getMeterInfo(), new File(path + midiDir + modelName + MIDIImport.EXTENSION)
+				tab.getMeterInfo(), new File(path + MIDI_DIR + modelName + MIDIImport.EXTENSION)
 			);
 //			System.out.println(path + "MIDI/" + modelName + MIDIImport.EXTENSION);
 //			ScorePiece sp = model.getScorePiece();
@@ -451,8 +463,8 @@ public class TabMapper {
 
 			// Store the results of the mapping process
 			// a. As .txt and .csv, containing the mapping statistics
-			ToolBox.storeTextFile(mappingDetails, new File(path + mappedDir + tabName + "-mapping_details.txt"));
-			ToolBox.storeTextFile(mappingDetailsCSV, new File(path + mappedDir + tabName + "-mapping_details.csv"));
+			ToolBox.storeTextFile(mappingDetails, new File(path + OUT_DIR + tabName + "-mapping_details.txt"));
+			ToolBox.storeTextFile(mappingDetailsCSV, new File(path + OUT_DIR + tabName + "-mapping_details.csv"));
 			// b. As MIDI (used to create a GT transcription for training a model) and MEI
 			// (used to visualise the mismatches)
 			ScorePiece p = 
@@ -466,7 +478,7 @@ public class TabMapper {
 			// Without full durations
 			if (!completeDurations) {
 				// MIDI 
-				File f = new File(path + mappedDir + tabName + MIDIImport.EXTENSION);
+				File f = new File(path + OUT_DIR + tabName + MIDIImport.EXTENSION);
 				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
 					f.getAbsolutePath()); // 05.12 added meterInfo and keyInfo
 				// MEI 
@@ -478,7 +490,7 @@ public class TabMapper {
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(
 						trans, tab, mismatchInds, grandStaff, tabOnTop,
-						new String[]{path + mappedDir + tabName, "TabMapper"});
+						new String[]{path + OUT_DIR + tabName, "TabMapper"});
 				}
 				
 				List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
@@ -505,7 +517,7 @@ public class TabMapper {
 				p.completeDurations(maxDur);
 //				p = Transcription.completeDurations(p, maxDur);
 				// MIDI
-				File fDur = new File(path + mappedDir + tabName + "-dur" + MIDIImport.EXTENSION);
+				File fDur = new File(path + OUT_DIR + tabName + "-dur" + MIDIImport.EXTENSION);
 				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
 					fDur.getAbsolutePath()); // 05.12 added meterInfo and keyInfo
 				// MEI
@@ -515,7 +527,7 @@ public class TabMapper {
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(transDur, tab, /*btp, transDur.getKeyInfo(),
 						tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, tabOnTop,
-						/*alignWithMetricBarring,*/ new String[]{path + mappedDir + tabName + "-dur", "TabMapper"});
+						/*alignWithMetricBarring,*/ new String[]{path + OUT_DIR + tabName + "-dur", "TabMapper"});
 				}
 			}
 		}
@@ -532,7 +544,7 @@ public class TabMapper {
 		for (String[] o : ornFullAllPieces) {
 			sb.append(Arrays.asList(o) + "\r\n");
 		}
-		ToolBox.storeTextFile(sb.toString(), new File(path + mappedDir + "glossary.txt"));
+		ToolBox.storeTextFile(sb.toString(), new File(path + OUT_DIR + "glossary.txt"));
 		
 		// Deduplicate
 		for (String[] o : ornFullAllPieces) {
@@ -547,7 +559,7 @@ public class TabMapper {
 		for (String l : ornDedupAllPieces) {
 			sb.append(l + "\r\n");
 		}
-		ToolBox.storeTextFile(sb.toString(), new File(path + mappedDir + "glossary-dedup.txt"));
+		ToolBox.storeTextFile(sb.toString(), new File(path + OUT_DIR + "glossary-dedup.txt"));
 		
 		String latexTable = ToolBox.createLaTeXTable(resultsOverAllPiecesArrStr, intsToAvg,
 			doublesToAvg, 0, 5, true);

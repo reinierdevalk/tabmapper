@@ -2,7 +2,7 @@
 
 # Script that runs TabMapper.
 
-code_path="F:/research/software/code/eclipse/"
+code_path="F:/research/computation/software/code/eclipse/"
 tabmapper_path="$code_path""tabmapper/"
 
 # Call java with the arguments given to tabmapper

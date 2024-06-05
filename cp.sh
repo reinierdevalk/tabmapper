@@ -2,7 +2,7 @@
 
 # Script that constructs the classpath from cp.txt.
 
-code_path="F:/research/software/code/eclipse/"
+code_path="F:/research/computation/software/code/eclipse/"
 tabmapper_path="$code_path""tabmapper/"
 
 # 1. Initialise classpath

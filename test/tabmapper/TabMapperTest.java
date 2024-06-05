@@ -4,13 +4,14 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import de.uos.fmt.musitech.utility.math.Rational;
+import external.Tablature;
+import external.Transcription;
 import junit.framework.TestCase;
-import path.Path;
-import representations.Tablature;
-import representations.Transcription;
 import tools.ToolBox;
+import tools.path.PathTools;
 
 public class TabMapperTest extends TestCase {
 
@@ -22,10 +23,18 @@ public class TabMapperTest extends TestCase {
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false);
 //		encodingTestpiece = new File(Runner.encodingsPathTest + "testpiece.tbp");
 //		midiTestpiece = new File(Runner.midiPathTest + "testpiece.mid");
-		encodingTestpiece = 
-			new File(Path.ROOT_PATH_DEPLOYMENT_DEV + Path.ENCODINGS_REL_PATH + Path.TEST_DIR + "testpiece.tbp");
-		midiTestpiece = 
-			new File(Path.ROOT_PATH_DEPLOYMENT_DEV + Path.MIDI_REL_PATH + Path.TEST_DIR + "testpiece.mid");
+		
+		Map<String, String> paths = PathTools.getPaths();
+		String ep = paths.get("ENCODINGS_PATH");
+		String mp = paths.get("MIDI_PATH");
+		String td = "test";
+
+		encodingTestpiece = new File(PathTools.getPathString(
+			Arrays.asList(ep, td)) + "testpiece.tbp"
+		);
+		midiTestpiece = new File(PathTools.getPathString(
+			Arrays.asList(mp, td)) + "testpiece.mid"
+		);
 	}
 
 	protected void tearDown() throws Exception {

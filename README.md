@@ -7,17 +7,21 @@
 
 2. cd into the tabmapper/ folder; you won't need to interfere with the 
    contents of the other two folders:
-   $ cd <code_path>/tabmapper
+   $ cd <code_path>/tabmapper/
   
 3. Open config.cfg and 
    - replace the default value of the CODE_PATH variable with <code_path>. 
    - replace the default value of the PATH_PATH variable with a directory
      that is on the $PATH variable. Recommended is /usr/local/bin/.
+     
      You can check which directories are on the PATH variable as follows 
      $ echo $PATH
 
 4. Install tabmapper on your computer by running the install.sh script: 
    $ bash install.sh
+
+   Note that, among other things, this script creates a folder data/ in
+   <code_path>/tabmapper/.
 
 5. Run tabmapper. This can be done from any directory on your computer.
    tabmapper takes ...
