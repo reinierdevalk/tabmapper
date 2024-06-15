@@ -1,6 +1,11 @@
 package tabmapper;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -9,15 +14,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import analysis.Analyser;
+import conversion.exports.MEIExport;
+import conversion.exports.MIDIExport;
 import conversion.imports.MIDIImport;
+import conversion.imports.TabImport;
 import de.uos.fmt.musitech.data.score.NotationChord;
 import de.uos.fmt.musitech.data.score.NotationSystem;
 import de.uos.fmt.musitech.data.score.NotationVoice;
 import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
-import conversion.exports.MEIExport;
-import conversion.exports.MIDIExport;
 import external.Tablature;
 import external.Transcription;
 import internal.core.Encoding;
@@ -172,12 +177,15 @@ public class TabMapper {
 		Map<String, String> paths = PathTools.getPaths();
 		String psp = PathTools.getPathString(Arrays.asList(
 			paths.get("CODE_PATH"),
-			"formats-representations",
+			"representations",
 			"py"
 		));
 		for (Map.Entry<String, String> entry : paths.entrySet()) {
 			System.out.println(entry.getKey() + " -- " + entry.getValue());
 		}
+		path = paths.get("TABMAPPER_PATH");
+		System.out.println(path);
+		System.out.println(args[0] + " " + args[1] + " " + args[2]);
 		System.exit(0);
 
 		Connection connection = Connection.RIGHT;
@@ -186,8 +194,39 @@ public class TabMapper {
 		boolean tabOnTop = false;
 		boolean completeDurations = false;
 
-		// For running manually
-		List<String[]> pieces = getPieces();
+		// Get the names of the .tc files in TAB_DIR and create pieces
+		List<String[]> pieces = new ArrayList<>();// = getPieces();
+		String tcExt = TabImport.TC_EXT;
+		String tbpExt = Encoding.EXTENSION;
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(path + TAB_DIR))) {
+			for (Path entry : stream) {
+				if (Files.isRegularFile(entry)) {
+					String filename = entry.getFileName().toString();
+					String[] ne = ToolBox.splitExt(filename);
+					String filenameTbp = ne[0] + tbpExt;
+					// Create .tbp file (if necessary)  
+					if (filename.endsWith(tcExt) && !Files.exists(Paths.get(path + filenameTbp))) {
+						String tbp = TabImport.tc2tbp(ToolBox.readTextFile(new File(entry.toString())));
+						ToolBox.storeTextFile(tbp, new File(path + TAB_DIR + filenameTbp));
+					}
+					pieces.add(new String[]{ne[0], ne[0] + "_vm_all"});
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+//		try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(path + TAB_DIR), "*" + ext)) {
+//			for (Path entry : stream) {
+//				String s = entry.getFileName().toString();
+//				pieces.add(new String[]{s, s.substring(0, s.indexOf(ext)) + "_vm_all" + MIDIImport.EXTENSION});
+//			}
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+
+//		pieces.forEach(s -> System.out.println(Arrays.asList(s)));
+//		System.exit(0);
 		List<String> skip = getPiecesToSkip();
 
 		resultsOverAllPieces = new StringBuffer();
@@ -203,7 +242,7 @@ public class TabMapper {
 		List<Integer> doubleInds = 
 			IntStream.rangeClosed(numCols-4, numCols-1).boxed().collect(Collectors.toList());
 		List<Integer> colsToSkip = Arrays.asList(new Integer[]{0});
-		List<Object> listsToAvg = Analyser.getListsToAvg(numCols, doubleInds, colsToSkip);
+		List<Object> listsToAvg = ToolBox.getListsToAvg(numCols, doubleInds, colsToSkip);
 		intsToAvg = (Integer[]) listsToAvg.get(0);
 		doublesToAvg = (Double[]) listsToAvg.get(1);
 
@@ -487,6 +526,7 @@ public class TabMapper {
 //				List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
 				System.out.println(path);
 				System.out.println("2222222");
+
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(
 						trans, tab, mismatchInds, grandStaff, tabOnTop,
@@ -887,7 +927,7 @@ public class TabMapper {
 //		ornThreshold = RhythmSymbol.SEMIMINIM.getDuration();
 //		ornThreshold = RhythmSymbol.MINIM.getDuration();
 		int ornThreshold = RhythmSymbol.MINIM.getDuration() / meterInfo.get(0)[Transcription.MI_DEN];
-		System.out.println(ornThreshold);
+//		System.out.println(ornThreshold);
 		
 //		if (meterInfo.get(0)[Timeline.MI_DEN] == 2) {
 //			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // *3 trp dur
@@ -903,6 +943,7 @@ public class TabMapper {
 		List<Integer[][]> gridAndMask = makeGridAndMask(trans, tab);
 		Integer[][] grid = gridAndMask.get(0);
 		Integer[][] mask = gridAndMask.get(1);
+		System.out.println("mask: " + Arrays.asList(mask[0]));
 //		System.out.println("G R I D");
 //		for (Integer[] in : grid) {
 //			System.out.println(Arrays.toString(in));
@@ -950,6 +991,7 @@ public class TabMapper {
 					tl.getMetricPosition(currMask[ONSET_IND])
 //					Utils.getMetricPosition(new Rational(currMask[ONSET_IND], SMALLEST_DUR), meterInfo)
 				);
+				
 
 				// Get pitches, arranged per voice (low-high), from GT
 				List<Integer> pitchesGT = 
@@ -1428,6 +1470,11 @@ public class TabMapper {
 		Integer[][] bnp = trans.getBasicNoteProperties();
 		Integer[][] btp = tab.getBasicTabSymbolProperties();
 		Timeline tl = tab.getEncoding().getTimeline();
+		
+		System.out.println("btpppppp: " + Arrays.asList(btp[0]));
+		System.out.println("btpppppp: " + Arrays.asList(btp[0]));
+		System.out.println("btpppppp: " + Arrays.asList(btp[1]));
+		System.out.println("btpppppp: " + Arrays.asList(btp[1]));
 
 		// Determine smallest duration in MIDI (currently simply set to Tablature.SMALLEST_RHYTHMIC_VALUE)
 		int smallestDur = -1;
@@ -2021,6 +2068,8 @@ public class TabMapper {
 					List<Integer[]> currCheapestMapping = getCheapestMapping(
 						currSubset, comb, lastPitchInAvailableVoices
 					);
+					System.out.println("currCheapestMapping");
+					System.out.println(currCheapestMapping);
 					int currCheapest = 
 						ToolBox.sumListInteger(ToolBox.getItemsAtIndex(currCheapestMapping, 2));
 					if (currCheapest < cheapest) {
@@ -2746,7 +2795,32 @@ public class TabMapper {
 //			new String[]{"rore-anchor_che_col"},
 	
 			// Olja thesis
-			new String[]{"D-Mbs_Mus.ms._1512_03r", "D-Mbs_Mus.ms._1512_03r_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_03v", "D-Mbs_Mus.ms._1512_03v_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_04r", "D-Mbs_Mus.ms._1512_04r_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_07v-08r", "D-Mbs_Mus.ms._1512_07v-08r_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_08v", "D-Mbs_Mus.ms._1512_08v_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_09r", "D-Mbs_Mus.ms._1512_09r_vm_all"},
+			//
+			new String[]{"D-Mbs_Mus.ms._1512_09v", "D-Mbs_Mus.ms._1512_09v_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_11r", "D-Mbs_Mus.ms._1512_11r_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_11v", "D-Mbs_Mus.ms._1512_11v_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_12r", "D-Mbs_Mus.ms._1512_12r_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_12v", "D-Mbs_Mus.ms._1512_12v_vm_all"},
+			//
+			new String[]{"D-Mbs_Mus.ms._1512_17r", "D-Mbs_Mus.ms._1512_17r_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_18r", "D-Mbs_Mus.ms._1512_18r_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_20v", "D-Mbs_Mus.ms._1512_20v_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_21r", "D-Mbs_Mus.ms._1512_21r_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_22v-23r", "D-Mbs_Mus.ms._1512_22v-23r_vm_all"},
+			//
+			new String[]{"D-Mbs_Mus.ms._1512_25v-26r", "D-Mbs_Mus.ms._1512_25v-26r_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_26v", "D-Mbs_Mus.ms._1512_26v_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_29r", "D-Mbs_Mus.ms._1512_29r_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_29v-30r", "D-Mbs_Mus.ms._1512_29v-30r_vm_all"},
+			new String[]{"D-Mbs_Mus.ms._1512_38v-39r", "D-Mbs_Mus.ms._1512_38v-39r_vm_all"},
+
+			// OLD
+//			new String[]{"D-Mbs_Mus.ms._1512_03r", "D-Mbs_Mus.ms._1512_03r_vm_all"},
 //			new String[]{"D-Mbs_Mus.ms._1512_04v-05r", "D-Mbs_Mus.ms._1512_04v-05r_vm_6v"},
 //			new String[]{"D-Mbs_Mus.ms._1512_09r", "D-Mbs_Mus.ms._1512_09r_vm_all"},
 //			new String[]{"D-Mbs_Mus.ms._1512_17r", "D-Mbs_Mus.ms._1512_17r_vm_all"},
