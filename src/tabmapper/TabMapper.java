@@ -175,58 +175,31 @@ public class TabMapper {
 		path = "C:/Users/Reinier/Desktop/olja-thesis/";
 
 		Map<String, String> paths = PathTools.getPaths();
+//		for (Map.Entry<String, String> entry : paths.entrySet()) {
+//			System.out.println(entry.getKey() + " -- " + entry.getValue());
+//		}
 		String psp = PathTools.getPathString(Arrays.asList(
 			paths.get("CODE_PATH"),
 			"representations",
 			"py"
 		));
-		for (Map.Entry<String, String> entry : paths.entrySet()) {
-			System.out.println(entry.getKey() + " -- " + entry.getValue());
-		}
-		path = paths.get("TABMAPPER_PATH");
-		System.out.println(path);
-		System.out.println(args[0] + " " + args[1] + " " + args[2]);
-		System.exit(0);
+//		path = paths.get("TABMAPPER_PATH");
+//		System.out.println(path);
+//		System.out.println(args[0] + " " + args[1] + " " + args[2]);
 
+		// Default options
 		Connection connection = Connection.RIGHT;
 		boolean includeOrn = true;
 		boolean grandStaff = true;
 		boolean tabOnTop = false;
 		boolean completeDurations = false;
-
+		
 		// Get the names of the .tc files in TAB_DIR and create pieces
-		List<String[]> pieces = new ArrayList<>();// = getPieces();
-		String tcExt = TabImport.TC_EXT;
-		String tbpExt = Encoding.EXTENSION;
-		try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(path + TAB_DIR))) {
-			for (Path entry : stream) {
-				if (Files.isRegularFile(entry)) {
-					String filename = entry.getFileName().toString();
-					String[] ne = ToolBox.splitExt(filename);
-					String filenameTbp = ne[0] + tbpExt;
-					// Create .tbp file (if necessary)  
-					if (filename.endsWith(tcExt) && !Files.exists(Paths.get(path + filenameTbp))) {
-						String tbp = TabImport.tc2tbp(ToolBox.readTextFile(new File(entry.toString())));
-						ToolBox.storeTextFile(tbp, new File(path + TAB_DIR + filenameTbp));
-					}
-					pieces.add(new String[]{ne[0], ne[0] + "_vm_all"});
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-//		try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(path + TAB_DIR), "*" + ext)) {
-//			for (Path entry : stream) {
-//				String s = entry.getFileName().toString();
-//				pieces.add(new String[]{s, s.substring(0, s.indexOf(ext)) + "_vm_all" + MIDIImport.EXTENSION});
-//			}
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-
-//		pieces.forEach(s -> System.out.println(Arrays.asList(s)));
-//		System.exit(0);
+		String tabMapperPath = paths.get("TABMAPPER_PATH");
+		List<String[]> pieces = getPieces(tabMapperPath + TAB_DIR);
+//		pieces = getPiecesOLD();
+		pieces.forEach(s -> System.out.println(Arrays.asList(s)));
+		
 		List<String> skip = getPiecesToSkip();
 
 		resultsOverAllPieces = new StringBuffer();
@@ -247,18 +220,16 @@ public class TabMapper {
 		doublesToAvg = (Double[]) listsToAvg.get(1);
 
 		if (args.length > 0) {
-			// Path
-//			path = args[args.length-2];
-			path = "user/";
-			path = "";
-			if (!path.endsWith("/")) {
-				path += "/";
-			}
+//			// Path
+////			path = args[args.length-2];
+//			path = "user/";
+//			path = "";
+//			if (!path.endsWith("/")) {
+//				path += "/";
+//			}
 //			path = PathTools.getCodeRootPath().toString();
 			System.out.println("YES!");
-			System.out.println(path);
-			System.exit(0);
-			
+
 //			MEIExport.setRootDir(path); // TODO fix; commented out to make the non-CLI version runnable
 			// Uncomment if the template.xml file is placed in the same dir as pieces.csv (args[1])
 //			MEIExport.MEITemplatePath = path; 
@@ -275,17 +246,53 @@ public class TabMapper {
 //			} else {
 //				System.out.println("The specified path is not a directory or does not exist.");
 //			}
-			
+
 			// Pieces
-			pieces = new ArrayList<>();
-			for (String line : ToolBox.readTextFile(new File(path + "in/pieces.txt")).split("\r\n")) {
-//			for (String line : ToolBox.readTextFile(new File(path + args[args.length-1])).split("\r\n")) {
-				String[] split = line.split(",");
-				pieces.add(new String[]{split[0].strip(), split[1].strip()});
+//			pieces = getPieces(paths);
+
+			// Parse options and overwrite default values
+			for (String s : args) {
+				s = s.trim();
+				String[] spl = s.split("=");
+				String opt = spl[0];
+				String val = spl[1];
+				if (opt.equals("-o")) {
+					if (val.equals("n")) {
+						includeOrn = false;
+					}
+				}
+				else if (opt.equals("-s")) {
+					if (val.equals("y")) {
+						grandStaff = false;
+					}
+				}
+				else if (opt.equals("-t")) {
+					if (val.equals("t")) {
+						tabOnTop = true;
+					}
+				}
+				else if (opt.equals("-d")) {
+					if (val.equals("y")) {
+						completeDurations = true;
+					}			
+				}
+				else if (opt.equals("-p")) {
+					pieces = new ArrayList<>();
+					String pieceNoExt = val.substring(0, val.lastIndexOf("."));
+					pieces.add(new String[]{pieceNoExt, pieceNoExt});
+				}
 			}
-			for (String[] s : pieces) {
-				System.out.println(s[0] + ", " + s[1]);
-			}
+			pieces.forEach(s -> System.out.println(Arrays.asList(s)));
+			
+//			pieces = new ArrayList<>();
+//			for (String line : ToolBox.readTextFile(new File(path + "in/pieces.txt")).split("\r\n")) {
+////			for (String line : ToolBox.readTextFile(new File(path + args[args.length-1])).split("\r\n")) {
+//				String[] split = line.split(",");
+//				pieces.add(new String[]{split[0].strip(), split[1].strip()});
+//			}
+//			for (String[] s : pieces) {
+//				System.out.println(s[0] + ", " + s[1]);
+//			}
 			
 			// Ornamentation
 //-**-			if (args.length == 3) {
@@ -298,94 +305,89 @@ public class TabMapper {
 //-**-				}
 //-**-			}
 			// Options: add ornamentation, add duration, grand staff (each Y/N)
-			if (args.length >= 0) { // TODO
-//			if (args.length > 2) {
-
-//				String opt = args[2];
-//				String orn = opt.substring(0, 1);
-//				String dur = opt.substring(1, 2);
-//				String gs = opt.substring(2, 3);
-//				includeOrn = (orn.contains("y") || orn.contains("Y")) ? true : false;
-//				addDuration = (dur.contains("y") || dur.contains("Y")) ? true : false;
-//				grandStaff = (gs.contains("y") || gs.contains("Y")) ? true : false;
-				
-				// Default settings
-				tabOnTop = true;
-				grandStaff = true;
-				includeOrn = true;
-				completeDurations = false;
-//				System.out.println(Arrays.asList(args));
-				// Last two args are positional args (path to data and list of pieces);
-				// any preceding args are option flags, diverging from the default: 
-				// -b (positions tab at bottom)
-				// -s (score instead of grand staff)
-				// -o (removes ornamentation)
-				// -d (adds duration)
-				String[] opts = Arrays.copyOfRange(args, 0, args.length);
-//				String[] opts = Arrays.copyOfRange(args, 0, args.length-2);
-				System.out.println(Arrays.asList(opts));
+//			if (args.length >= 0) {
+////			if (args.length > 2) {
+//
+////				String opt = args[2];
+////				String orn = opt.substring(0, 1);
+////				String dur = opt.substring(1, 2);
+////				String gs = opt.substring(2, 3);
+////				includeOrn = (orn.contains("y") || orn.contains("Y")) ? true : false;
+////				addDuration = (dur.contains("y") || dur.contains("Y")) ? true : false;
+////				grandStaff = (gs.contains("y") || gs.contains("Y")) ? true : false;
+//				
+//				// Default settings
+//				tabOnTop = true;
+//				grandStaff = true;
+//				includeOrn = true;
+//				completeDurations = false;
+////				System.out.println(Arrays.asList(args));
+//				// Last two args are positional args (path to data and list of pieces);
+//				// any preceding args are option flags, diverging from the default: 
+//				// -b (positions tab at bottom)
+//				// -s (score instead of grand staff)
+//				// -o (removes ornamentation)
+//				// -d (adds duration)
+//				String[] opts = Arrays.copyOfRange(args, 0, args.length);
+////				String[] opts = Arrays.copyOfRange(args, 0, args.length-2);
 //				System.out.println(Arrays.asList(opts));
-				// Combined flags
-				if (opts.length == 1) {
-					String choice = opts[0];
-					if (choice.contains("b")) {
-						tabOnTop = false;
-					}
-					if (choice.contains("s")) {
-						grandStaff = false;
-					}
-					if (choice.contains("o")) {
-						includeOrn = false;
-					}
-					if (choice.contains("d")) {
-						completeDurations = true;
-					}
-				}
-//				else {
-//					for (String o : opts) {
-//						String choice = o.substring(o.indexOf("=")+1, o.length());
-//						if (o.startsWith("-p")) { 
-//							if (choice.equals("top")) {
-//								tabOnTop = true;
-//							}
-//							else {
-//								tabOnTop = false;
-//							}
-//						}
-//						else if (o.startsWith("-s")) {
-//							if (choice.equals("staff")) {
-//								grandStaff = true;
-//							}
-//							else {
-//								grandStaff = false;
-//							}
-//						}
-//						else if (o.startsWith("-o")) {
-//							if (choice.equals("yes") || choice.equals("y")) {
-//								includeOrn = true;
-//							}
-//							else {
-//								includeOrn = false;
-//							}
-//						}
-//						else if (o.startsWith("-d")) {
-//							if (choice.equals("yes") || choice.equals("y")) {
-//								addDuration = true;
-//							}
-//							else {
-//								addDuration = false;
-//							}
-//						}
+////				System.out.println(Arrays.asList(opts));
+//				// Combined flags
+//				if (opts.length == 1) {
+//					String choice = opts[0];
+//					if (choice.contains("b")) {
+//						tabOnTop = false;
+//					}
+//					if (choice.contains("s")) {
+//						grandStaff = false;
+//					}
+//					if (choice.contains("o")) {
+//						includeOrn = false;
+//					}
+//					if (choice.contains("d")) {
+//						completeDurations = true;
 //					}
 //				}
-			}
-//			System.out.println(tabOnTop);
-//			System.out.println(grandStaff);
-//			System.out.println(includeOrn);
-//			System.out.println(addDuration);
-//			System.exit(0);
-		}		
-				
+////				else {
+////					for (String o : opts) {
+////						String choice = o.substring(o.indexOf("=")+1, o.length());
+////						if (o.startsWith("-p")) { 
+////							if (choice.equals("top")) {
+////								tabOnTop = true;
+////							}
+////							else {
+////								tabOnTop = false;
+////							}
+////						}
+////						else if (o.startsWith("-s")) {
+////							if (choice.equals("staff")) {
+////								grandStaff = true;
+////							}
+////							else {
+////								grandStaff = false;
+////							}
+////						}
+////						else if (o.startsWith("-o")) {
+////							if (choice.equals("yes") || choice.equals("y")) {
+////								includeOrn = true;
+////							}
+////							else {
+////								includeOrn = false;
+////							}
+////						}
+////						else if (o.startsWith("-d")) {
+////							if (choice.equals("yes") || choice.equals("y")) {
+////								addDuration = true;
+////							}
+////							else {
+////								addDuration = false;
+////							}
+////						}
+////					}
+////				}
+//			}
+		}	
+//		System.exit(0);
 		MEIExport.setPythonScriptPath(psp);
 
 //		System.out.println(tabOnTop);
@@ -409,9 +411,13 @@ public class TabMapper {
 //			if (i == 0) {
 //				shortNames.set(0, "OSP"); //-**-
 //			}
-
+			
+			System.out.println(tabMapperPath + TAB_DIR + tabName + Encoding.EXTENSION);
+			System.out.println(tabMapperPath + MIDI_DIR + modelName + Encoding.EXTENSION);
+//			System.exit(0);
+			
 			// Make tab; make model transcription
-			Tablature tab = new Tablature(new File(path + TAB_DIR + tabName + Encoding.EXTENSION));
+			Tablature tab = new Tablature(new File(tabMapperPath + TAB_DIR + tabName + Encoding.EXTENSION));
 //			Tablature tab = new Tablature(new File(path + "tab/" + tabName + Encoding.EXTENSION), false);
 //			List<Integer[]> mapp = tab.mapTabBarsToMetricBars();
 //			for (Integer[] in : mapp) {
@@ -419,7 +425,7 @@ public class TabMapper {
 //			}
 
 			Transcription model = new Transcription(
-				tab.getMeterInfo(), new File(path + MIDI_DIR + modelName + MIDIImport.EXTENSION)
+				tab.getMeterInfo(), new File(tabMapperPath + MIDI_DIR + modelName + MIDIImport.EXTENSION)
 			);
 //			System.out.println(path + "MIDI/" + modelName + MIDIImport.EXTENSION);
 //			ScorePiece sp = model.getScorePiece();
@@ -502,8 +508,8 @@ public class TabMapper {
 
 			// Store the results of the mapping process
 			// a. As .txt and .csv, containing the mapping statistics
-			ToolBox.storeTextFile(mappingDetails, new File(path + OUT_DIR + tabName + "-mapping_details.txt"));
-			ToolBox.storeTextFile(mappingDetailsCSV, new File(path + OUT_DIR + tabName + "-mapping_details.csv"));
+			ToolBox.storeTextFile(mappingDetails, new File(tabMapperPath + OUT_DIR + tabName + "-mapping_details.txt"));
+			ToolBox.storeTextFile(mappingDetailsCSV, new File(tabMapperPath + OUT_DIR + tabName + "-mapping_details.csv"));
 			// b. As MIDI (used to create a GT transcription for training a model) and MEI
 			// (used to visualise the mismatches)
 			ScorePiece p = 
@@ -517,20 +523,18 @@ public class TabMapper {
 			// Without full durations
 			if (!completeDurations) {
 				// MIDI 
-				File f = new File(path + OUT_DIR + tabName + MIDIImport.EXTENSION);
+				File f = new File(tabMapperPath + OUT_DIR + tabName + MIDIImport.EXTENSION);
 				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
 					f.getAbsolutePath()); // 05.12 added meterInfo and keyInfo
 				// MEI 
 				Transcription trans = new Transcription(f);
 //				trans.setColourIndices(mismatchInds);
 //				List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
-				System.out.println(path);
-				System.out.println("2222222");
 
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(
 						trans, tab, mismatchInds, grandStaff, tabOnTop,
-						new String[]{path + OUT_DIR + tabName, "TabMapper"});
+						new String[]{tabMapperPath + OUT_DIR + tabName, "TabMapper"});
 				}
 				
 				List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
@@ -552,12 +556,13 @@ public class TabMapper {
 					ToolBox.getItemsAtIndex(tab.getMeterInfo(), 		
 					Tablature.MI_DIM);
 				Rational maxDur = dims.get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
+				maxDur = Rational.HALF; // TODO fix
 //				Rational maxDur = tab.getDiminutions().get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
 				
 				p.completeDurations(maxDur);
 //				p = Transcription.completeDurations(p, maxDur);
 				// MIDI
-				File fDur = new File(path + OUT_DIR + tabName + "-dur" + MIDIImport.EXTENSION);
+				File fDur = new File(tabMapperPath + OUT_DIR + tabName + "-dur" + MIDIImport.EXTENSION);
 				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
 					fDur.getAbsolutePath()); // 05.12 added meterInfo and keyInfo
 				// MEI
@@ -567,7 +572,7 @@ public class TabMapper {
 				if (!skip.contains(tabName)) {
 					MEIExport.exportMEIFile(transDur, tab, /*btp, transDur.getKeyInfo(),
 						tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, tabOnTop,
-						/*alignWithMetricBarring,*/ new String[]{path + OUT_DIR + tabName + "-dur", "TabMapper"});
+						/*alignWithMetricBarring,*/ new String[]{tabMapperPath + OUT_DIR + tabName + "-dur", "TabMapper"});
 				}
 			}
 		}
@@ -584,7 +589,7 @@ public class TabMapper {
 		for (String[] o : ornFullAllPieces) {
 			sb.append(Arrays.asList(o) + "\r\n");
 		}
-		ToolBox.storeTextFile(sb.toString(), new File(path + OUT_DIR + "glossary.txt"));
+		ToolBox.storeTextFile(sb.toString(), new File(tabMapperPath + OUT_DIR + "glossary.txt"));
 		
 		// Deduplicate
 		for (String[] o : ornFullAllPieces) {
@@ -599,11 +604,38 @@ public class TabMapper {
 		for (String l : ornDedupAllPieces) {
 			sb.append(l + "\r\n");
 		}
-		ToolBox.storeTextFile(sb.toString(), new File(path + OUT_DIR + "glossary-dedup.txt"));
+		ToolBox.storeTextFile(sb.toString(), new File(tabMapperPath + OUT_DIR + "glossary-dedup.txt"));
 		
 		String latexTable = ToolBox.createLaTeXTable(resultsOverAllPiecesArrStr, intsToAvg,
 			doublesToAvg, 0, 5, true);
 		System.out.println(latexTable);
+	}
+
+
+	private static List<String[]> getPieces(String p) {
+		List<String[]> pieces = new ArrayList<>();
+		String tcExt = TabImport.TC_EXT;
+		String tbpExt = Encoding.EXTENSION;
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(p))) {
+//		try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(path + TAB_DIR))) {
+			for (Path entry : stream) {
+				if (Files.isRegularFile(entry)) {
+					String filename = entry.getFileName().toString();
+					String[] ne = ToolBox.splitExt(filename);
+					String filenameTbp = ne[0] + tbpExt;
+					// Create .tbp file (if necessary)  
+					if (filename.endsWith(tcExt) && !Files.exists(Paths.get(p + filenameTbp))) {
+						String tbp = TabImport.tc2tbp(ToolBox.readTextFile(new File(entry.toString())));
+						ToolBox.storeTextFile(tbp, new File(p + filenameTbp));
+					}
+					pieces.add(new String[]{ne[0], ne[0]});
+//					pieces.add(new String[]{ne[0], ne[0] + "_vm_all"});
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return pieces;
 	}
 
 
@@ -2663,7 +2695,7 @@ public class TabMapper {
 
 
 	// C O N V E N I E N C E  M E T H O D S
-	private static List<String[]> getPieces() {
+	private static List<String[]> getPiecesOLD() {
 		List<String[]> pieces = Arrays.asList(new String[][]{
 			// Two Morales test pieces from https://www.uma.es/victoria/morales.html
 //			new String[] {"3610_033_inter_natos_mulierum_morales_T-rev", "Morales-Inter_Natos_Mulierum-1-54"},
@@ -2795,30 +2827,33 @@ public class TabMapper {
 //			new String[]{"rore-anchor_che_col"},
 	
 			// Olja thesis
-			new String[]{"D-Mbs_Mus.ms._1512_03v", "D-Mbs_Mus.ms._1512_03v_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_04r", "D-Mbs_Mus.ms._1512_04r_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_07v-08r", "D-Mbs_Mus.ms._1512_07v-08r_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_08v", "D-Mbs_Mus.ms._1512_08v_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_09r", "D-Mbs_Mus.ms._1512_09r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_03v", "D-Mbs_Mus.ms._1512_03v_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_04r", "D-Mbs_Mus.ms._1512_04r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_07v-08r", "D-Mbs_Mus.ms._1512_07v-08r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_08v", "D-Mbs_Mus.ms._1512_08v_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_09r", "D-Mbs_Mus.ms._1512_09r_vm_all"},
 			//
-			new String[]{"D-Mbs_Mus.ms._1512_09v", "D-Mbs_Mus.ms._1512_09v_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_11r", "D-Mbs_Mus.ms._1512_11r_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_11v", "D-Mbs_Mus.ms._1512_11v_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_12r", "D-Mbs_Mus.ms._1512_12r_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_12v", "D-Mbs_Mus.ms._1512_12v_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_09v", "D-Mbs_Mus.ms._1512_09v_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_11r", "D-Mbs_Mus.ms._1512_11r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_11v", "D-Mbs_Mus.ms._1512_11v_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_12r", "D-Mbs_Mus.ms._1512_12r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_12v", "D-Mbs_Mus.ms._1512_12v_vm_all"},
 			//
-			new String[]{"D-Mbs_Mus.ms._1512_17r", "D-Mbs_Mus.ms._1512_17r_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_18r", "D-Mbs_Mus.ms._1512_18r_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_20v", "D-Mbs_Mus.ms._1512_20v_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_21r", "D-Mbs_Mus.ms._1512_21r_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_22v-23r", "D-Mbs_Mus.ms._1512_22v-23r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_17r", "D-Mbs_Mus.ms._1512_17r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_18r", "D-Mbs_Mus.ms._1512_18r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_20v", "D-Mbs_Mus.ms._1512_20v_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_21r", "D-Mbs_Mus.ms._1512_21r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_22v-23r", "D-Mbs_Mus.ms._1512_22v-23r_vm_all"},
 			//
-			new String[]{"D-Mbs_Mus.ms._1512_25v-26r", "D-Mbs_Mus.ms._1512_25v-26r_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_26v", "D-Mbs_Mus.ms._1512_26v_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_29r", "D-Mbs_Mus.ms._1512_29r_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_29v-30r", "D-Mbs_Mus.ms._1512_29v-30r_vm_all"},
-			new String[]{"D-Mbs_Mus.ms._1512_38v-39r", "D-Mbs_Mus.ms._1512_38v-39r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_25v-26r", "D-Mbs_Mus.ms._1512_25v-26r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_26v", "D-Mbs_Mus.ms._1512_26v_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_29r", "D-Mbs_Mus.ms._1512_29r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_29v-30r", "D-Mbs_Mus.ms._1512_29v-30r_vm_all"},
+//			new String[]{"D-Mbs_Mus.ms._1512_38v-39r", "D-Mbs_Mus.ms._1512_38v-39r_vm_all"},
+			
+			new String[]{"D-B_Mus.ms._40632_18v-19r", "D-B_Mus.ms._40632_18v-19r"},
 
+			
 			// OLD
 //			new String[]{"D-Mbs_Mus.ms._1512_03r", "D-Mbs_Mus.ms._1512_03r_vm_all"},
 //			new String[]{"D-Mbs_Mus.ms._1512_04v-05r", "D-Mbs_Mus.ms._1512_04v-05r_vm_6v"},
