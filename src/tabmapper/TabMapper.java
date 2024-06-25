@@ -183,8 +183,9 @@ public class TabMapper {
 			"representations",
 			"py"
 		));
-//		path = paths.get("TABMAPPER_PATH");
+		path = paths.get("TABMAPPER_PATH");
 //		System.out.println(path);
+//		System.exit(0);
 //		System.out.println(args[0] + " " + args[1] + " " + args[2]);
 
 		// Default options
@@ -505,6 +506,8 @@ public class TabMapper {
 				voiceLabels = voiceLabelsCopy;
 				btp = btpCopy;
 			}
+			
+			List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
 
 			// Store the results of the mapping process
 			// a. As .txt and .csv, containing the mapping statistics
@@ -537,12 +540,13 @@ public class TabMapper {
 						new String[]{tabMapperPath + OUT_DIR + tabName, "TabMapper"});
 				}
 				
-				List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
-//				List<String[]> ornaments = getOrnaments(tab, trans, ornInds);
-//				ornFullAllPieces.addAll(ornaments);
-//				for (String[] o : ornaments) {
-//					System.out.println(o[0] + ", " + o[1]);
-//				}
+//				List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
+				List<String[]> ornaments = getOrnaments(tab, trans, ornInds);
+				ornFullAllPieces.addAll(ornaments);
+				for (String[] o : ornaments) {
+					System.out.println(o[0] + ", " + o[1]);
+				}
+//				System.exit(0);
 				
 //				System.exit(0);
 //				ornFullAllPieces.addAll(MEIExport.ornFull);
@@ -574,6 +578,9 @@ public class TabMapper {
 						tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, tabOnTop,
 						/*alignWithMetricBarring,*/ new String[]{tabMapperPath + OUT_DIR + tabName + "-dur", "TabMapper"});
 				}
+				
+				List<String[]> ornaments = getOrnaments(tab, transDur, ornInds);
+				ornFullAllPieces.addAll(ornaments);
 			}
 		}
 //		System.out.println(models);
