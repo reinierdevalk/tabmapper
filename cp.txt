@@ -1,6 +1,0 @@
-.
-utils/bin
-utils/lib/*
-formats-representations/bin
-formats-representations/lib/*
-tabmapper/bin

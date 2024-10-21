@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -35,30 +36,42 @@ import tools.labels.LabelTools;
 import tools.music.PitchKeyTools;
 import tools.music.TimeMeterTools;
 import tools.path.PathTools;
+import tools.text.StringTools;
 
 public class TabMapper {
 	private static final int BAR_IND = 0;
 	private static final int ONSET_IND = 1;
+	private static final int PITCHES_IND = 2;
 	public static final int SMALLEST_DUR = Tablature.SRV_DEN;
 	private static final int NUM_COURSES = 6;
 	private static enum Connection {LEFT, RIGHT};
-	private static final List<String> COLS = Arrays.asList(new String[]{
-		"piece", "N_model", "N_intab", 
-		"M", "M_o", "M_r", "M_f", "M_a",
-		"m", "m_oa", "m_a", "p_o"
-	});
+	private static final String NUM_NOTES_MODEL = "N_model";
+	private static final String NUM_NOTES_INTAB = "N_intab";
+	private static final String NUM_MISMATCHES = "M";
+	private static final String NUM_MISMATCHES_ORN = "M_o";
+	private static final String NUM_MISMATCHES_REP = "M_r";
+	private static final String NUM_MISMATCHES_FIC = "M_f";
+	private static final String NUM_MISMATCHES_ADA = "M_a";
+	private static final String M = "m";
+	private static final String M_OA = "m_oa";
+	private static final String M_A = "m_a"; 
+	private static final String P_O = "p_o";
+	private static final List<String> COLS = Arrays.asList(
+		"piece", // String
+		NUM_NOTES_MODEL, NUM_NOTES_INTAB, NUM_MISMATCHES, NUM_MISMATCHES_ORN, 
+		NUM_MISMATCHES_REP, NUM_MISMATCHES_FIC, NUM_MISMATCHES_ADA, // int
+		M, M_OA, M_A, P_O // double
+	);
 	private static final String TAB_DIR = "in/tab/";
 	private static final String MIDI_DIR = "in/MIDI/";
 	private static final String OUT_DIR = "out/";
-
-	private static StringBuffer resultsOverAllPieces;
-	private static String[][] resultsOverAllPiecesArrStr;
-	private static Integer[] intsToAvg;
-	private static Double[] doublesToAvg;
-	private static List<String> shortNames;
-	private static int totalNumNotes = 0;
-	private static List<Integer> models = new ArrayList<>();
-	private static List<Integer> modelsBnp = new ArrayList<>();
+	
+	private static final List<String> ALLOWED_FILE_FORMATS = Arrays.asList(
+		Encoding.EXTENSION, 
+		TabImport.TC_EXT, 
+		MEIExport.MEI_EXT, 
+		MEIExport.MEI_EXT_ALT
+	);
 
 	private static final List<Integer> MAJOR = Arrays.asList(new Integer[]{0, 2, 4, 5, 7, 9, 11});
 	private static final List<Integer> MINOR = Arrays.asList(new Integer[]{0, 2, 3, 5, 7, 8, 10});
@@ -159,311 +172,97 @@ public class TabMapper {
 
 
 	public static void main(String[] args) {
-		String path = "F:/research/projects/byrd/";
-//		path = "C:/Users/Reinier/Desktop/2019-ISMIR/test/";
-//		path = "C:/Users/Reinier/Desktop/IMS-tours/example/";
-//		path = "C:/Users/Reinier/Desktop/2019-ISMIR/poster/imgs/";
-//		path = "F:/research/publications/conferences-workshops/2019-ISMIR/paper/josquintab/";
-//		path = "C:/Users/Reinier/Desktop/test-capirola/";
-//		path = "C:/Users/Reinier/Desktop/tabmapper/";
-		path = "C:/Users/Reinier/Desktop/luteconv_v1.4.7/";
-		path = "C:/Users/Reinier/Dropbox/MedRen-2023/tabmapper/adriaenssen/";
-//		path = "C:/Users/Reinier/Dropbox/MedRen-2023/tabmapper/paston/";
-		path = "F:/research/data/annotated/tabmapper/adriaenssen-int/";
-		path = "F:/research/data/annotated/tabmapper/byrd-int/";
-//		path = "F:/research/data/annotated/tabmapper/josquin-int/";
-		path = "C:/Users/Reinier/Desktop/olja-thesis/";
-
+		// Paths
 		Map<String, String> paths = PathTools.getPaths();
-//		for (Map.Entry<String, String> entry : paths.entrySet()) {
-//			System.out.println(entry.getKey() + " -- " + entry.getValue());
-//		}
-		String psp = PathTools.getPathString(Arrays.asList(
-			paths.get("CODE_PATH"),
-			"representations",
-			"py"
-		));
-		path = paths.get("TABMAPPER_PATH");
-//		System.out.println(path);
-//		System.exit(0);
-//		System.out.println(args[0] + " " + args[1] + " " + args[2]);
+		String tmp = paths.get("TABMAPPER_PATH");
+		String inPathTab = PathTools.getPathString(Arrays.asList(tmp, TAB_DIR));
+		String inPathMIDI = PathTools.getPathString(Arrays.asList(tmp, MIDI_DIR));
+		String outPath = PathTools.getPathString(Arrays.asList(tmp, OUT_DIR));
+		String pp = PathTools.getPathString(
+			Arrays.asList(paths.get("CODE_PATH"), "utils", "py")
+		);
+		MEIExport.setPythonPath(pp);
+		String tp = paths.get("TEMPLATES_PATH");
+		MEIExport.setTemplatesPath(tp);
 
-		// Default options
+		// Variables
 		Connection connection = Connection.RIGHT;
-		boolean includeOrn = true;
-		boolean grandStaff = true;
-		boolean tabOnTop = false;
-		boolean completeDurations = false;
-		
-		// Get the names of the .tc files in TAB_DIR and create pieces
-		String tabMapperPath = paths.get("TABMAPPER_PATH");
-		List<String[]> pieces = getPieces(tabMapperPath + TAB_DIR);
-//		pieces = getPiecesOLD();
-		pieces.forEach(s -> System.out.println(Arrays.asList(s)));
-		
-		List<String> skip = getPiecesToSkip();
-
-		resultsOverAllPieces = new StringBuffer();
-		for (int i = 0; i < COLS.size(); i++) {
-			String s = COLS.get(i);
-			resultsOverAllPieces = 
-				(i < COLS.size()-1) ? resultsOverAllPieces.append(s + "\t") :
-				resultsOverAllPieces.append(s + "\r\n");
-		}
-		resultsOverAllPiecesArrStr = new String[pieces.size()+1][COLS.size()];
-
-		int numCols = COLS.size();
-		List<Integer> doubleInds = 
-			IntStream.rangeClosed(numCols-4, numCols-1).boxed().collect(Collectors.toList());
-		List<Integer> colsToSkip = Arrays.asList(new Integer[]{0});
-		List<Object> listsToAvg = ToolBox.getListsToAvg(numCols, doubleInds, colsToSkip);
-		intsToAvg = (Integer[]) listsToAvg.get(0);
-		doublesToAvg = (Double[]) listsToAvg.get(1);
-
+		AtomicBoolean includeOrn = null;
+		AtomicBoolean showAsScore = null;
+		AtomicBoolean tabOnTop = null;
+		AtomicBoolean completeDurations = null;
+		List<String[]> pieces = new ArrayList<>();
 		if (args.length > 0) {
-//			// Path
-////			path = args[args.length-2];
-//			path = "user/";
-//			path = "";
-//			if (!path.endsWith("/")) {
-//				path += "/";
-//			}
-//			path = PathTools.getCodeRootPath().toString();
-			System.out.println("YES!");
+			args = args[0].split(",");
 
-//			MEIExport.setRootDir(path); // TODO fix; commented out to make the non-CLI version runnable
-			// Uncomment if the template.xml file is placed in the same dir as pieces.csv (args[1])
-//			MEIExport.MEITemplatePath = path; 
-			
-//			Path directoryPath = Paths.get("/path/to/your/directory");
-//	        
-//			// Check if the directory exists and is indeed a directory
-//			if (Files.exists(directoryPath) && Files.isDirectory(directoryPath)) {
-//				try (Stream<Path> paths = Files.list(directoryPath)) {
-//					paths.forEach(path -> System.out.println(path.getFileName()));
-//				} catch (IOException e) {
-//					System.err.println("An I/O error occurred: " + e.getMessage());
-//				}
-//			} else {
-//				System.out.println("The specified path is not a directory or does not exist.");
-//			}
+			// Default abtab values
+			includeOrn = new AtomicBoolean(true);
+			showAsScore = new AtomicBoolean(false);
+			tabOnTop = new AtomicBoolean(false);
+			completeDurations = new AtomicBoolean(false);
 
-			// Pieces
-//			pieces = getPieces(paths);
+			// NB The same opts and vals must be used in abtab.sh
+			List<String> opts = Arrays.asList("-o", "-s", "-t", "-d", "-f");
+			List<String> trueVals = Arrays.asList("y", "y", "t", "y");
+			List<AtomicBoolean> optBools = Arrays.asList(
+				includeOrn, showAsScore, tabOnTop, completeDurations
+			);
 
-			// Parse options and overwrite default values
+			// Parse options 
 			for (String s : args) {
-				s = s.trim();
-				String[] spl = s.split("=");
+				String[] spl = s.trim().split(" ");
 				String opt = spl[0];
 				String val = spl[1];
-				if (opt.equals("-o")) {
-					if (val.equals("n")) {
-						includeOrn = false;
-					}
-				}
-				else if (opt.equals("-s")) {
-					if (val.equals("y")) {
-						grandStaff = false;
-					}
-				}
-				else if (opt.equals("-t")) {
-					if (val.equals("t")) {
-						tabOnTop = true;
-					}
-				}
-				else if (opt.equals("-d")) {
-					if (val.equals("y")) {
-						completeDurations = true;
-					}			
-				}
-				else if (opt.equals("-p")) {
-					pieces = new ArrayList<>();
+				if (opt.equals("-f")) {
 					String pieceNoExt = val.substring(0, val.lastIndexOf("."));
-					pieces.add(new String[]{pieceNoExt, pieceNoExt});
+					pieces.add(new String[]{pieceNoExt, pieceNoExt, null});
+				}
+				else {
+					int ind = opts.indexOf(opt);
+					String trueVal = trueVals.get(ind);
+					optBools.get(ind).set((val.equals(trueVal) ? true : false));
 				}
 			}
-			pieces.forEach(s -> System.out.println(Arrays.asList(s)));
-			
-//			pieces = new ArrayList<>();
-//			for (String line : ToolBox.readTextFile(new File(path + "in/pieces.txt")).split("\r\n")) {
-////			for (String line : ToolBox.readTextFile(new File(path + args[args.length-1])).split("\r\n")) {
-//				String[] split = line.split(",");
-//				pieces.add(new String[]{split[0].strip(), split[1].strip()});
-//			}
-//			for (String[] s : pieces) {
-//				System.out.println(s[0] + ", " + s[1]);
-//			}
-			
-			// Ornamentation
-//-**-			if (args.length == 3) {
-//-**-				String opt = args[2]; 
-//-**-				if (!opt.equals("-n")) {
-//-**-					System.out.println("Unknown optional argument: " + opt);
-//-**-				}
-//-**-				else {
-//-**-					includeOrn = false;
-//-**-				}
-//-**-			}
-			// Options: add ornamentation, add duration, grand staff (each Y/N)
-//			if (args.length >= 0) {
-////			if (args.length > 2) {
-//
-////				String opt = args[2];
-////				String orn = opt.substring(0, 1);
-////				String dur = opt.substring(1, 2);
-////				String gs = opt.substring(2, 3);
-////				includeOrn = (orn.contains("y") || orn.contains("Y")) ? true : false;
-////				addDuration = (dur.contains("y") || dur.contains("Y")) ? true : false;
-////				grandStaff = (gs.contains("y") || gs.contains("Y")) ? true : false;
-//				
-//				// Default settings
-//				tabOnTop = true;
-//				grandStaff = true;
-//				includeOrn = true;
-//				completeDurations = false;
-////				System.out.println(Arrays.asList(args));
-//				// Last two args are positional args (path to data and list of pieces);
-//				// any preceding args are option flags, diverging from the default: 
-//				// -b (positions tab at bottom)
-//				// -s (score instead of grand staff)
-//				// -o (removes ornamentation)
-//				// -d (adds duration)
-//				String[] opts = Arrays.copyOfRange(args, 0, args.length);
-////				String[] opts = Arrays.copyOfRange(args, 0, args.length-2);
-//				System.out.println(Arrays.asList(opts));
-////				System.out.println(Arrays.asList(opts));
-//				// Combined flags
-//				if (opts.length == 1) {
-//					String choice = opts[0];
-//					if (choice.contains("b")) {
-//						tabOnTop = false;
-//					}
-//					if (choice.contains("s")) {
-//						grandStaff = false;
-//					}
-//					if (choice.contains("o")) {
-//						includeOrn = false;
-//					}
-//					if (choice.contains("d")) {
-//						completeDurations = true;
-//					}
-//				}
-////				else {
-////					for (String o : opts) {
-////						String choice = o.substring(o.indexOf("=")+1, o.length());
-////						if (o.startsWith("-p")) { 
-////							if (choice.equals("top")) {
-////								tabOnTop = true;
-////							}
-////							else {
-////								tabOnTop = false;
-////							}
-////						}
-////						else if (o.startsWith("-s")) {
-////							if (choice.equals("staff")) {
-////								grandStaff = true;
-////							}
-////							else {
-////								grandStaff = false;
-////							}
-////						}
-////						else if (o.startsWith("-o")) {
-////							if (choice.equals("yes") || choice.equals("y")) {
-////								includeOrn = true;
-////							}
-////							else {
-////								includeOrn = false;
-////							}
-////						}
-////						else if (o.startsWith("-d")) {
-////							if (choice.equals("yes") || choice.equals("y")) {
-////								addDuration = true;
-////							}
-////							else {
-////								addDuration = false;
-////							}
-////						}
-////					}
-////				}
-//			}
-		}	
-//		System.exit(0);
-		MEIExport.setPythonScriptPath(psp);
+			// If there is no -f option: add all pieces in in/ to pieces
+			if (!Arrays.stream(args).anyMatch(s -> s.startsWith("-f"))) {
+				List<String> inputFiles = readInputFolder(inPathTab, ALLOWED_FILE_FORMATS, false);
+				inputFiles.forEach(f -> pieces.add(new String[]{f, f, null}));
+			}
+		}
+		else {
+			includeOrn = new AtomicBoolean(true);
+			showAsScore = new AtomicBoolean(false);
+			tabOnTop = new AtomicBoolean(false);
+			completeDurations = new AtomicBoolean(false);
+			List<String> inputFiles = readInputFolder(inPathTab, ALLOWED_FILE_FORMATS, false);
+			inputFiles.forEach(f -> pieces.add(new String[]{f, f, null}));
+		}
 
-//		System.out.println(tabOnTop);
-//		System.out.println(grandStaff);
-//		System.out.println(includeOrn);
-//		System.out.println(completeDurations);
-
-		// Map each piece in pieces
-		shortNames = new ArrayList<>();
-		List<String[]> ornFullAllPieces = new ArrayList<>();
-		List<String> ornDedupAllPieces = new ArrayList<>();
+		// Map pieces; add to tables, store output files
+		StringBuffer table = new StringBuffer();
+		table.append(COLS.stream().collect(Collectors.joining("\t", "", "\r\n")));
+		String[][] latexTable = new String[pieces.size()+1][COLS.size()];
+		List<Integer> intInds = IntStream.rangeClosed(1, COLS.indexOf(M) - 1)
+			.boxed()
+			.collect(Collectors.toList());
+		Integer[] intsToAvg = new Integer[COLS.size()];
+		Arrays.fill(intsToAvg, 0);
+		Double[] doublesToAvg = new Double[COLS.size()];
+		Arrays.fill(doublesToAvg, 0.0);
+		List<String> uniqueOrns = new ArrayList<>();
 		for (int i = 0; i < pieces.size(); i++) {
 			String[] piece = pieces.get(i);
 			String tabName = piece[0];
-			String modelName = piece.length == 1 ? piece[0] : piece[1];
-			System.out.println("\r\n... mapping " + tabName + " ...");
-			String shortName =
-				tabName.substring(0, 1).matches("^[0-9].*") ? tabName.substring(0, tabName.indexOf("_")) :
-				ToolBox.getShortName(tabName.substring(tabName.indexOf("-") + 1));
-			shortNames.add(shortName);
-//			if (i == 0) {
-//				shortNames.set(0, "OSP"); //-**-
-//			}
-			
-			System.out.println(tabMapperPath + TAB_DIR + tabName + Encoding.EXTENSION);
-			System.out.println(tabMapperPath + MIDI_DIR + modelName + Encoding.EXTENSION);
-//			System.exit(0);
-			
+			String modelName = piece[1];
+			String shortName = "[" + (i+1) + "]";
+			piece[2] = shortName;
+			System.out.println("... mapping " + shortName + " " + tabName + " ...");
+
 			// Make tab; make model transcription
-			Tablature tab = new Tablature(new File(tabMapperPath + TAB_DIR + tabName + Encoding.EXTENSION));
-//			Tablature tab = new Tablature(new File(path + "tab/" + tabName + Encoding.EXTENSION), false);
-//			List<Integer[]> mapp = tab.mapTabBarsToMetricBars();
-//			for (Integer[] in : mapp) {
-//				System.out.println(Arrays.toString(in));
-//			}
-
+			Tablature tab = new Tablature(new File(inPathTab + tabName + Encoding.EXTENSION));
 			Transcription model = new Transcription(
-				tab.getMeterInfo(), new File(tabMapperPath + MIDI_DIR + modelName + MIDIImport.EXTENSION)
+				tab.getMeterInfo(), new File(inPathMIDI + modelName + MIDIImport.EXTENSION)
 			);
-//			System.out.println(path + "MIDI/" + modelName + MIDIImport.EXTENSION);
-//			ScorePiece sp = model.getScorePiece();
-//			NotationSystem ns = sp.getScore();
-//			NotationVoice nv = ns.get(0).get(0);
-//			for (NotationChord nc : nv) {
-//				System.out.println(nc);
-//			}
-//			System.exit(0);
-//				new File(path + "tab/" + tabName + Encoding.EXTENSION)); //,*/ tab.getEncoding().getTimeline());
-//			MIDIExport.exportMidiFile(model.getPiece(), Arrays.asList(new Integer[]{MIDIExport.GUITAR}), path + "5253_02-2.mid");
-//			System.exit(0); // HIERRR
-			
-//			MetricalTimeLine mtl = model.getPiece().getMetricalTimeLine(); 
-//			List<Rational[]> timeSigAndOnsets = new ArrayList<>(); 
-//			for (int j = 0; j < mtl.size(); j++) {
-////				System.out.println(mtl.get(i));
-//				Marker mk = mtl.get(j);
-//				if (mk instanceof TimeSignatureMarker) {
-//					TimeSignatureMarker tsm = (TimeSignatureMarker) mk;
-//					TimeSignature ts = tsm.getTimeSignature();
-//					Rational tsRat = new Rational(ts.getNumerator(), ts.getDenominator());
-//					Rational mtRat = mk.getMetricTime();
-//					if (!ToolBox.getItemsAtIndex(timeSigAndOnsets, 1).contains(mtRat)) {
-//						timeSigAndOnsets.add(new Rational[]{new Rational(ts.getNumerator(), ts.getDenominator()), mtRat});
-//					}
-//				}
-////				if (!onsets.contains(mtl.get(i).getMetricTime())) {
-////					onsets.add(mtl.get(i).getMetricTime());
-////				}
-//			}
-//			for (Rational[] r : timeSigAndOnsets) {
-//				System.out.println(Arrays.asList(r));
-//			}
-
-			models.add(model.getNumberOfNotes());
-			modelsBnp.add(model.getBasicNoteProperties().length);
 			// If necessary: adapt maximum number of voices 
 			if (model.getNumberOfVoices() == 6) {
 				Transcription.setMaxNumVoices(6);
@@ -471,151 +270,267 @@ public class TabMapper {
 			if (Transcription.MAX_NUM_VOICES == 6 && model.getNumberOfVoices() < 6) {
 				Transcription.setMaxNumVoices(5);
 			}
-
 			Integer[][] btp = tab.getBasicTabSymbolProperties();
 			Integer[][] bnp = model.getBasicNoteProperties();
-			System.out.println("    tab has " + (btp[btp.length-1][Tablature.CHORD_SEQ_NUM] + 1) +
-				" chords and " + btp.length + " notes");
-			System.out.println("    MIDI has " + (bnp[bnp.length-1][Transcription.CHORD_SEQ_NUM] + 1) 
-				+ " chords and " + bnp.length + " notes");
-			System.out.println();
-			totalNumNotes += btp.length;
-//			System.exit(0);
 
-			// Map tab onto model
-			List<Object> mapping = map(model, tab, includeOrn, connection, i);
+			// Map tab onto model and calculate results
+			List<Object> mapping = map(model, tab, includeOrn.get(), connection);
 			List<List<Double>> voiceLabels = (List<List<Double>>) mapping.get(0);
 			List<List<Integer>> mismatchInds = (List<List<Integer>>) mapping.get(1);
-			String mappingDetails = (String) mapping.get(2);
-			String mappingDetailsCSV = (String) mapping.get(3);
+			List<String> csv = (List<String>) mapping.get(2);
+			List<Object> results = getPieceResults(
+				btp, bnp, shortName, mismatchInds, includeOrn.get()
+			);
+			String tableRow = (String) results.get(0);
+			Integer[] ints = (Integer[]) results.get(1);
+			Double[] doubles = (Double[]) results.get(2);
 
-			// Remove all null voice labels from voiceLabels; remove the corresponding rows from 
-			// btp. null voice labels are given to ornamental notes when includeOrn == false 
-			if (!includeOrn) {
-				List<List<Double>> voiceLabelsCopy = new ArrayList<>();
-				Integer[][] btpCopy = 
-					new Integer[voiceLabels.size() - Collections.frequency(voiceLabels, null)][btp[0].length];
-				int ind = 0;
+			// Store
+			// a. CSV with mapping statistics
+			StringBuffer csvSb = new StringBuffer();
+			csv.forEach(s -> csvSb.append(s + "\r\n"));
+			ToolBox.storeTextFile(csvSb.toString(), new File(outPath + tabName + "-mapping.csv"));
+			// b. MIDI (used to create a GT transcription for training a model) 
+			String fn = completeDurations.get() ? tabName + "-dur" : tabName;
+			File f = new File(outPath + fn + MIDIImport.EXTENSION);
+			if (!includeOrn.get()) {
+				List<Integer> repInds = mismatchInds.get(Transcription.REPETITION_IND);
+				List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
+				List<Integer> ficInds = mismatchInds.get(Transcription.FICTA_IND);
+				List<Integer> adaInds = mismatchInds.get(Transcription.ADAPTATION_IND);
+
+				// Remove all voice labels for ornamental notes (which, when includeOrn == false,
+				// are null)
+				List<List<Double>> voiceLabelsNoOrn = new ArrayList<>();
 				for (int j = 0; j < voiceLabels.size(); j++) {
-					if (voiceLabels.get(j) != null) {
-						voiceLabelsCopy.add(voiceLabels.get(j));
-						btpCopy[ind] = btp[j];
-						ind++;
+					if (!ornInds.contains(j)) {
+//					if (voiceLabels.get(j) != null) {
+						voiceLabelsNoOrn.add(voiceLabels.get(j));
+					}
+
+				}
+				voiceLabels = voiceLabelsNoOrn;
+
+				// Adapt lists to account for excluded ornamental notes (shift indices back) 
+				for (List<Integer> l : Arrays.asList(repInds, ficInds, adaInds)) {
+					for (int j = 0; j < l.size(); j++) {
+						int ind = l.get(j);
+						for (int indOrn : ornInds) {
+							if (indOrn < ind) {
+								l.set(j, l.get(j) - 1);
+							}
+							else {
+								break;
+							}
+						}
 					}
 				}
-				voiceLabels = voiceLabelsCopy;
-				btp = btpCopy;
-			}
-			
-			List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
+				// Clear ornInds
+				ornInds.clear();
 
-			// Store the results of the mapping process
-			// a. As .txt and .csv, containing the mapping statistics
-			ToolBox.storeTextFile(mappingDetails, new File(tabMapperPath + OUT_DIR + tabName + "-mapping_details.txt"));
-			ToolBox.storeTextFile(mappingDetailsCSV, new File(tabMapperPath + OUT_DIR + tabName + "-mapping_details.csv"));
-			// b. As MIDI (used to create a GT transcription for training a model) and MEI
-			// (used to visualise the mismatches)
-			ScorePiece p = 
-				new ScorePiece(btp, null, voiceLabels, null, model.getScorePiece().getMetricalTimeLine(), 
-				model.getScorePiece().getHarmonyTrack(), model.getNumberOfVoices(), model.getScorePiece().getName());
-//			Piece p = 
-//				Transcription.createPiece(btp, null, voiceLabels, null, model.getNumberOfVoices(), 
-//				model.getScorePiece().getMetricalTimeLine(), model.getScorePiece().getHarmonyTrack(),
-//				model.getScorePiece().getName());
-			List<Integer> instruments = Arrays.asList(new Integer[]{MIDIExport.GUITAR});
-			// Without full durations
-			if (!completeDurations) {
-				// MIDI 
-				File f = new File(tabMapperPath + OUT_DIR + tabName + MIDIImport.EXTENSION);
-				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
-					f.getAbsolutePath()); // 05.12 added meterInfo and keyInfo
-				// MEI 
-				Transcription trans = new Transcription(f);
-//				trans.setColourIndices(mismatchInds);
-//				List<Integer[]> mi = (tab == null) ? trans.getMeterInfo() : tab.getMeterInfo();
-
-				if (!skip.contains(tabName)) {
-					MEIExport.exportMEIFile(
-						trans, tab, mismatchInds, grandStaff, tabOnTop,
-						new String[]{tabMapperPath + OUT_DIR + tabName, "TabMapper"});
-				}
-				
-//				List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
-				List<String[]> ornaments = getOrnaments(tab, trans, ornInds);
-				ornFullAllPieces.addAll(ornaments);
-				for (String[] o : ornaments) {
-					System.out.println(o[0] + ", " + o[1]);
-				}
-//				System.exit(0);
-				
-//				System.exit(0);
-//				ornFullAllPieces.addAll(MEIExport.ornFull);
-//				MEIExport.ornFull.clear();
-				
+				Tablature tabDeorn = new Tablature(tab);
+				tabDeorn.augment(
+					RhythmSymbol.SEMIMINIM.getDuration(), mismatchInds.get(Transcription.SPECIAL_ORN_IND),
+					-1, "deornament"
+				);
+				tab = tabDeorn;
+				btp = tab.getBasicTabSymbolProperties();
 			}
-			// With full durations 
-			if (completeDurations) {
-				List<Integer> dims = 
-//					ToolBox.getItemsAtIndex(tab.getTimeline().getMeterInfoOBS(), 
-					ToolBox.getItemsAtIndex(tab.getMeterInfo(), 		
-					Tablature.MI_DIM);
-				Rational maxDur = dims.get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
-				maxDur = Rational.HALF; // TODO fix
-//				Rational maxDur = tab.getDiminutions().get(0) == 2 ? Rational.HALF : Rational.ONE; // TODO account for multiple dims per piece and for other values than 1 and 2 
-				
-				p.completeDurations(maxDur);
-//				p = Transcription.completeDurations(p, maxDur);
-				// MIDI
-				File fDur = new File(tabMapperPath + OUT_DIR + tabName + "-dur" + MIDIImport.EXTENSION);
-				MIDIExport.exportMidiFile(p, instruments, model.getMeterInfo(), model.getKeyInfo(),
-					fDur.getAbsolutePath()); // 05.12 added meterInfo and keyInfo
-				// MEI
-				Transcription transDur = new Transcription(fDur);
-//				transDur.setColourIndices(mismatchInds);
-//				List<Integer[]> mi = (tab == null) ? transDur.getMeterInfo() : tab.getMeterInfo();
-				if (!skip.contains(tabName)) {
-					MEIExport.exportMEIFile(transDur, tab, /*btp, transDur.getKeyInfo(),
-						tab.getTripletOnsetPairs(),*/ mismatchInds, grandStaff, tabOnTop,
-						/*alignWithMetricBarring,*/ new String[]{tabMapperPath + OUT_DIR + tabName + "-dur", "TabMapper"});
+			ScorePiece p = new ScorePiece(
+				btp, null, voiceLabels, null, model.getScorePiece().getMetricalTimeLine(), 
+				model.getScorePiece().getHarmonyTrack(), model.getNumberOfVoices(), 
+				model.getScorePiece().getName()
+			);
+			if (completeDurations.get()) {
+				p.completeDurations(Rational.HALF); // TODO OK for all meters?
+			}
+			MIDIExport.exportMidiFile(
+				p, Arrays.asList(new Integer[]{MIDIExport.GUITAR}), model.getMeterInfo(), 
+				model.getKeyInfo(), f.getAbsolutePath()
+			);
+			// c. MEI (used to visualise the mismatches)
+			Transcription trans = new Transcription(f);
+			MEIExport.exportMEIFile(
+				trans, tab, mismatchInds, showAsScore.get(), tabOnTop.get(),
+				new String[]{outPath + fn, "abtab -- tabmapper"}
+			);
+			// d. CSV with ornaments
+			List<String> csvOrn = null;
+			if (includeOrn.get()) {
+				csvOrn = getOrnaments(
+					tab, trans, mismatchInds.get(Transcription.ORNAMENTATION_IND)
+				);
+				StringBuffer csvOrnSb = new StringBuffer();
+				csvOrn.forEach(s -> csvOrnSb.append(s + "\r\n"));
+				ToolBox.storeTextFile(csvOrnSb.toString(), new File(outPath + tabName + "-ornaments.csv"));
+			}
+
+			// Update
+			// a. table
+			table.append(tableRow);
+			// b. latexTable
+			for (int j = 0; j < ints.length; j++) {
+				latexTable[i][j] = j == 0 ? shortName : 
+					(intInds.contains(j) ? String.valueOf(ints[j]) : ToolBox.formatDouble(doubles[j], 0, 5));	
+			}
+			// c. lists to average
+			for (int j = 1; j < ints.length; j++) {
+				if (intInds.contains(j)) {
+					intsToAvg[j] += ints[j];
 				}
-				
-				List<String[]> ornaments = getOrnaments(tab, transDur, ornInds);
-				ornFullAllPieces.addAll(ornaments);
+				else {
+					doublesToAvg[j] += doubles[j];
+				}
+			}
+			// d. uniqueOrns
+			if (includeOrn.get()) {
+				csvOrn.forEach(s -> { 
+					if (!s.startsWith("ornament") && !uniqueOrns.contains(s.substring(0, s.indexOf(",")))) { 
+						uniqueOrns.add(s.substring(0, s.indexOf(","))); 
+					} 
+				});
 			}
 		}
-//		System.out.println(models);
-//		System.out.println(modelsBnp);
 
+		// Print
+		System.out.println();
 		System.out.println(
-			"\r\n" + pieces.size() + (pieces.size() == 1 ? " piece (" : " pieces (") + 
-			totalNumNotes + " notes) processed" + "\r\n");
-		
-		System.out.println(resultsOverAllPieces);
-		
-		StringBuffer sb = new StringBuffer();
-		for (String[] o : ornFullAllPieces) {
-			sb.append(Arrays.asList(o) + "\r\n");
-		}
-		ToolBox.storeTextFile(sb.toString(), new File(tabMapperPath + OUT_DIR + "glossary.txt"));
-		
-		// Deduplicate
-		for (String[] o : ornFullAllPieces) {
-			if (!ornDedupAllPieces.contains(o[0]) && !o[0].startsWith("piece=")) {
-				ornDedupAllPieces.add(o[0]);
+			pieces.size() + (pieces.size() == 1 ? " piece (" : " pieces (") + 
+			intsToAvg[COLS.indexOf(NUM_NOTES_INTAB)] + " notes) processed"
+		);
+		pieces.forEach(p -> System.out.println(p[2] + " " + p[0]));
+		System.out.println();
+		System.out.println(table);
+
+		// Store
+		StringBuffer uniqueOrnsSb = new StringBuffer();
+		uniqueOrns.forEach(s -> uniqueOrnsSb.append(s + "\r\n"));
+		ToolBox.storeTextFile(uniqueOrnsSb.toString(), new File(outPath + "ornaments.csv"));
+		String fullLatexTable = StringTools.createLaTeXTable(
+			latexTable, intsToAvg, doublesToAvg, intInds, 0, 5, true
+		);
+		ToolBox.storeTextFile(fullLatexTable, new File(outPath + "LaTeX.txt"));
+	}
+
+
+	/**
+	 * Gets, for the allowed formats given, the (unique) piece names. Any pieces not
+	 * in .tbp format are converted into it.
+	 * 
+	 * @param inPath
+	 * @param formats
+	 * @param inclExt
+	 * 
+	 * @return The list of unique pieces.
+	 */
+	public static List<String> readInputFolder(String inPath, List<String> formats, boolean inclExt) {
+		// Get unique piece names
+		List<String> piecenames = getFilenamesInFolder(inPath, formats, inclExt);
+
+		// Convert any non-.tbp into .tbp
+		for (String p : piecenames) {
+			if (!Files.exists(Paths.get(inPath + p + Encoding.EXTENSION))) {
+				// .tc file
+				if (Files.exists(Paths.get(inPath + p + TabImport.TC_EXT))) {
+					String s = TabImport.tc2tbp(
+						ToolBox.readTextFile(new File(inPath + p + TabImport.TC_EXT))
+					);
+					ToolBox.storeTextFile(s, new File(inPath + p + Encoding.EXTENSION));
+				}
+				// .xml file
+				else if (Files.exists(Paths.get(inPath + p + MEIExport.MEI_EXT))) {
+					// TODO luteconv .xml -> .tc; TabImport.tc2tbp()
+				}
+				// .mei file 
+				else if (Files.exists(Paths.get(inPath + p + MEIExport.MEI_EXT_ALT))) {
+					// TODO luteconv .mei -> .tc; TabImport.tc2tbp()
+				}
 			}
-			else {
-				System.out.println(o[0]);
+		}
+		return piecenames;
+	}
+
+
+	private static List<Object> getPieceResults(Integer[][] btp, Integer[][] bnp, 
+		String shortName, List<List<Integer>> mismatchInds, boolean includeOrn) {
+
+		int numOrn = mismatchInds.get(Transcription.ORNAMENTATION_IND).size();
+		int mo = includeOrn ? numOrn : 0;
+		int mr = mismatchInds.get(Transcription.REPETITION_IND).size();
+		int mf = mismatchInds.get(Transcription.FICTA_IND).size();
+		int mad = mismatchInds.get(Transcription.ADAPTATION_IND).size();
+
+		int numNotesTrans = bnp.length;
+		int numNotesTab = btp.length - (!includeOrn ? numOrn : 0);
+		int numMismatches = mo + mr + mf + mad;
+
+		// m: o, r, f, a count as mismatch
+		double m = (numNotesTab - (mo + mr + mf + mad)) / (double) numNotesTab; 
+		// m_oa: only o and a count as mismatch
+		double moa = (numNotesTab - (mo + mad)) / (double) numNotesTab;
+		// m_a: only a count as mismatch
+		double ma = (numNotesTab - mad) / (double) numNotesTab; 
+		// p_o: percentage of ornamentation
+		double po = (mo / (double) numNotesTab);
+
+		String results = String.join("\t", Arrays.stream(new Object[]{
+			shortName, numNotesTrans, numNotesTab, numMismatches, mo, mr, mf, mad,
+			ToolBox.formatDouble(m, 0, 5), ToolBox.formatDouble(moa, 0, 5), 
+			ToolBox.formatDouble(ma, 0, 5), ToolBox.formatDouble(po, 0, 5)})
+			.map(String::valueOf).toArray(String[]::new)
+		) + "\r\n";
+
+		Integer[] ints = new Integer[COLS.size()];
+		Arrays.fill(ints, 0);
+		ints[COLS.indexOf(NUM_NOTES_MODEL)] = numNotesTrans;
+		ints[COLS.indexOf(NUM_NOTES_INTAB)] = numNotesTab;
+		ints[COLS.indexOf(NUM_MISMATCHES)] = numMismatches;
+		ints[COLS.indexOf(NUM_MISMATCHES_ORN)] = mo; 
+		ints[COLS.indexOf(NUM_MISMATCHES_REP)] = mr;
+		ints[COLS.indexOf(NUM_MISMATCHES_FIC)] = mf;
+		ints[COLS.indexOf(NUM_MISMATCHES_ADA)] = mad;
+		Double[] doubles = new Double[COLS.size()];
+		doubles[COLS.indexOf(M)] = m;
+		doubles[COLS.indexOf(M_OA)] = moa;
+		doubles[COLS.indexOf(M_A)] = ma;
+		doubles[COLS.indexOf(P_O)] = po;
+
+		return Arrays.asList(new Object[]{results, ints, doubles});
+	}
+
+
+	/**
+	 * Gets, on the given path, the names of all pieces with an extension that is in 
+	 * the given list.
+	 * 
+	 * @param path
+	 * @param ext
+	 * @param includeEnc
+	 * @return
+	 */
+	public static List<String> getFilenamesInFolder(String path, List<String> ext, boolean includeEnc) {
+		List<String> pieces = new ArrayList<>();
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(path))) {
+			for (Path entry : stream) {
+				if (Files.isRegularFile(entry)) {
+					String filename = entry.getFileName().toString();
+					String[] ne = ToolBox.splitExt(filename);
+					if (ext.contains(ne[1])) {
+						if (includeEnc) {
+							pieces.add(filename);
+						}
+						else {
+							if (!pieces.contains(ne[0])) {
+								pieces.add(ne[0]);
+							}
+						}
+					}
+				}
 			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		sb = new StringBuffer();
-		for (String l : ornDedupAllPieces) {
-			sb.append(l + "\r\n");
-		}
-		ToolBox.storeTextFile(sb.toString(), new File(tabMapperPath + OUT_DIR + "glossary-dedup.txt"));
-		
-		String latexTable = ToolBox.createLaTeXTable(resultsOverAllPiecesArrStr, intsToAvg,
-			doublesToAvg, 0, 5, true);
-		System.out.println(latexTable);
+		return pieces;
 	}
 
 
@@ -646,29 +561,31 @@ public class TabMapper {
 	}
 
 
-	static List<String[]> getOrnaments(Tablature tab, Transcription trans, List<Integer> ornInds) {
-		List<String[]> ornaments = new ArrayList<>();
-		
+	static List<String> getOrnaments(Tablature tab, Transcription trans, List<Integer> ornIndsFlat) {
+		List<String> csv = new ArrayList<>();
+		csv.add(String.join(",", Arrays.asList(
+			"ornament", "voice", "bar", "pitch"
+		)));
+
 		Rational srv = Tablature.SMALLEST_RHYTHMIC_VALUE;
-		List<List<Integer>> ornsInds = new ArrayList<>();
+		
+		// Split flat list into individual ornaments (series of consecutive integers)
+		List<List<Integer>> ornInds = new ArrayList<>();
 		List<Integer> orn = new ArrayList<>();
-		for (int j = 0; j < ornInds.size(); j++) {
-			orn.add(ornInds.get(j));
-			if (j < ornInds.size() - 1) { 
-				if (ornInds.get(j + 1) != ornInds.get(j) + 1) {
-					ornsInds.add(orn);
+		for (int j = 0; j < ornIndsFlat.size(); j++) {
+			orn.add(ornIndsFlat.get(j));
+			if (j < ornIndsFlat.size() - 1) { 
+				if (ornIndsFlat.get(j + 1) != ornIndsFlat.get(j) + 1) {
+					ornInds.add(orn);
 					orn = new ArrayList<>();
 				}
 			}
 			else {
-				ornsInds.add(orn);
+				ornInds.add(orn);
 			}
 		}
-		System.out.println(ornInds);
-//		System.out.println(ornsInds);
-		
+
 		Integer[][] btp = tab.getBasicTabSymbolProperties();
-		
 		Integer[][] bnp = trans.getBasicNoteProperties();
 		List<Integer[]> ki = trans.getKeyInfo();
 		int on = Transcription.ONSET_TIME_NUMER;
@@ -678,49 +595,22 @@ public class TabMapper {
 		ScoreMetricalTimeLine smtl = trans.getScorePiece().getScoreMetricalTimeLine();
 		NotationSystem ns = trans.getScorePiece().getScore();				
 		List<List<Double>> vl = trans.getVoiceLabels();
-		for (int i = 0; i < vl.size(); i++) {
-			if (vl.get(i).size() == 2) {
-				System.out.println(i);
-				System.out.println(vl);
-			}
-		}
-		System.out.println(tab.getBasicTabSymbolProperties().length);
-		System.out.println(trans.getBasicNoteProperties().length);
+
 		List<List<List<Integer>>> aligned = Transcription.alignTabAndTransIndices(btp, bnp);
 		List<List<Integer>> tabToTr = aligned.get(0);
 		List<List<Integer>> trToTab = aligned.get(1);
-		System.out.println(tabToTr);
-		System.out.println(trToTab);
-		for(int i = 0; i < tabToTr.size(); i++) {
-			if (tabToTr.get(i).size() == 2) {
-				System.out.println(i + " -- " + tabToTr.get(i));
-			}
-		}
-//		System.out.println(vl.size());
-//		System.exit(0);
-		
-		
 
 		// For each ornamental run
-		for (List<Integer> currOrn : ornsInds) {			
-
-			
-			// The indices in ornsInds are tab indices, and need to be aligned to the trans indices
-			System.out.println(currOrn);
+		for (List<Integer> currOrn : ornInds) {
+			// The indices in ornInds are tab indices, and need to be aligned to the trans indices
 			List<Integer> currOrnTrans = new ArrayList<>();
 			currOrn.forEach(ind -> currOrnTrans.add(trToTab.indexOf(Arrays.asList(ind))));
-			System.out.println(currOrnTrans);
-			System.out.println("* * *  * * * *");
 			currOrn = currOrnTrans;
-			
-			
+
 			int currStartInd = currOrn.get(0);
 //			currStartInd = trToTab.indexOf(Arrays.asList(currStartInd));
-
 			
 			// Get the voice the run is in, as well as the mt, mp, and bar of its first note
-			 
-			
 			int currVoice = LabelTools.convertIntoListOfVoices(
 				vl.get(currStartInd)
 			).get(0); // get(0) OK because an ornamental note is never a SNU
@@ -728,22 +618,25 @@ public class TabMapper {
 			Rational currStartMt = new Rational(bnp[currStartInd][on], bnp[currStartInd][od]);
 			currStartMt.reduce();
 			Rational[] currStartMetPos = smtl.getMetricPosition(currStartMt);
-			int currStartBar = currStartMetPos[0].getNumer();
-			Rational currStartMp = currStartMetPos[1];
-			currStartMp.reduce();
-			
+			String bmpStr = TimeMeterTools.getMetricPositionAsString(currStartMetPos);
+//			int currStartBar = currStartMetPos[0].getNumer();
+//			Rational currStartMp = currStartMetPos[1];
+//			currStartMp.reduce();
+
 			List<String> currLoc = Arrays.asList(
-				"voice=" + currVoice, 
-				"bar=" + currStartBar, 
-				"metPos=" + currStartMp,
-				"startPitch=" + bnp[currStartInd][Transcription.PITCH]
+				String.valueOf(currVoice),
+				bmpStr,
+				String.valueOf(bnp[currStartInd][Transcription.PITCH])
+//				"voice=" + currVoice, 
+//				"bar=" + currStartBar, 
+//				"metPos=" + currStartMp,
+//				"startPitch=" + bnp[currStartInd][Transcription.PITCH]
 			);
 
 			// For each note in the run
 			List<String> currEnc = new ArrayList<>();
 			for (int j = 0; j < currOrn.size(); j++) {
 				int currInd = currOrn.get(j);
-				System.out.println("mismatchInd = " + currInd);
 				Integer[] currBnp = bnp[currInd];
 
 				// Get pitch, metric time, and duration of current note
@@ -752,24 +645,11 @@ public class TabMapper {
 				currMt.reduce();
 				Rational currDur = new Rational(currBnp[dn], currBnp[dd]);
 				currDur.reduce();
-				if (currDur.equals(new Rational(85, 1024))) {
-					List<Integer> gridNums = IntStream.rangeClosed(0, srv.getDenom())
-						.boxed()
-						.collect(Collectors.toList());
-					System.out.println(TimeMeterTools.round(currDur, gridNums));
-					System.exit(0);
-				}
-				
-				System.out.println(currPitch + " " + currMt + " " + currDur + " " + currStartBar);
-				if (currInd == 103) {
-//					System.exit(0);
-				}
 				Rational currOffset = currMt.add(currDur);
 				int currIndInNv = currNv.find(currMt);
-				
+
 				// Handle current note (dur)
 				currEnc.add(TimeMeterTools.getDurationAsString(currDur, srv));
-//				System.out.println(currEnc);
 
 				boolean isFirstOfRun = currInd == currOrn.get(0);
 				boolean isFirstOfVoice = currNv.find(currMt) == 0;
@@ -786,17 +666,13 @@ public class TabMapper {
 					Rational nextDur = nextNc.get(0).getMetricDuration();
 					nextStep = nextPitch - currPitch;
 					nextDurAsStr = TimeMeterTools.getDurationAsString(nextDur, srv);
-//					System.out.println(nextPitch + " " + nextMt + " " + nextDur);
 				}
-
 
 				// First note of run: handle left border note (dur, step))
 				if (isFirstOfRun) {
 					// If there is no previous note in the nv
 					if (isFirstOfVoice) {
 						currEnc.addAll(0, Arrays.asList("R", "0"));
-						System.out.println("first of run, first of voice");
-//						System.out.println(currEnc);
 					}
 					// If there is a previous note in the nv
 					else {
@@ -807,7 +683,6 @@ public class TabMapper {
 						Rational prevOffset = prevMt.add(prevDur);
 						int prevStep = currPitch - prevPitch;
 						String prevDurAsStr = TimeMeterTools.getDurationAsString(prevDur, srv);
-//						System.out.println(prevPitch + " " + prevMt + " " + prevDur + " " + prevOffset);
 
 						// If there is a rest between the previous and the current note
 						if (prevOffset.isLess(currMt)) {
@@ -816,8 +691,6 @@ public class TabMapper {
 						else {
 							currEnc.addAll(0, Arrays.asList(prevDurAsStr, String.valueOf(prevStep)));
 						}
-						System.out.println("first of run, NOT first of voice");
-//						System.out.println(currEnc);
 					}	
 				}
 				// Last note of run: handle right border note (step, dur)
@@ -825,8 +698,6 @@ public class TabMapper {
 					// If there is no next note in the nv
 					if (isLastOfVoice) {
 						currEnc.addAll(Arrays.asList("0", "R"));
-						System.out.println("last of run, last of voice");
-//						System.out.println(currEnc);
 					}
 					// If there is a next note in the nv
 					else {
@@ -837,47 +708,28 @@ public class TabMapper {
 						else {
 							currEnc.addAll(Arrays.asList(String.valueOf(nextStep), nextDurAsStr));
 						}
-						System.out.println("last of run, NOT last of voice");
-//						System.out.println(currEnc);
 					}
 				}
 				// Not last note of run: handle next note (step)
 				// NB It is assumed that the run contains no rests
 				if (!isLastOfRun) {
 					currEnc.addAll(Arrays.asList(String.valueOf(nextStep)));
-					System.out.println("NOT last of run");
-//					System.out.println(currEnc);
 				}
 
 				// Get (spelled) pitch
 				boolean spellPitch = false;
 				if (spellPitch) {
 					Integer[] currKi = trans.getLocalKeyInfo(currMt);
-//					Integer[] currKi = ki.get(ki.size()-1);
-//					if (ki.size() > 1) {
-//						for (int k = 0; k < ki.size() - 1; k++) {
-//							if (currMt.isGreaterOrEqual(new Rational(ki.get(k)[on], ki.get(k)[od])) 
-//								&& currMt.isLess(new Rational(ki.get(k+1)[on], ki.get(k+1)[od]))) {
-//								currKi = ki.get(k);
-//								break;
-//							}
-//						}	
-//					}
 					String[] pa = (String[]) PitchKeyTools.spellPitch(
 						currPitch, currKi[Transcription.KI_KEY], PitchKeyTools.createGrids(
 							currKi[Transcription.KI_KEY], currKi[Transcription.KI_MODE]
 						), null).get(0);
-					System.out.println("pitch = " + pa[0] + (pa[1].equals("n") ? "" : (pa[1].equals("s") ? "#" : "b")));
 				}
 			}
-			ornaments.add(new String[]{
-				currEnc.toString(), currLoc.toString()
-			});	
-			System.out.println(currEnc);
-//			System.exit(0);
+			csv.add(String.join(" ", currEnc) + "," + String.join(",", currLoc));
 		}
 
-		return ornaments;
+		return csv;
 	}
 
 
@@ -920,86 +772,51 @@ public class TabMapper {
 	 * @param trans
 	 * @param tab
 	 * @param includeOrnamentation
-	 * @return A list of voice labels. 
+	 * @param connection
+	 * @param shortName
+	 * 
+	 * @return 
 	 */
-	private static List<Object> map(Transcription trans, Tablature tab, boolean includeOrnamentation,
-		Connection connection, int pieceIndex) {
-		System.out.println("\r\n>>> TabMapper.map() called");
+	private static List<Object> map(Transcription trans, Tablature tab, boolean includeOrnamentation, 
+		Connection connection) {
+//		System.out.println("\r\n>>> TabMapper.map() called");
+
 		Integer[][] btp = tab.getBasicTabSymbolProperties();
 		int numVoices = trans.getNumberOfVoices();
-		List<Double> emptyVoiceLabel = makeEmptyVoiceLabel(numVoices);
-		
+
 		// Get key information
 		List<Integer[]> keyInfo = trans.getKeyInfo();
 		Integer[] firstKey = keyInfo.get(0);
-//		Integer[] firstKey = keyInfo.size() == 1 ? keyInfo.get(0) : trans.getLocalKeyInfo(currOnset);
-
 		int firstKeySig = firstKey[Transcription.KI_KEY]; // num b (<0) / # (>0)
 		int firstMode = firstKey[Transcription.KI_MODE]; // major (0) / minor (1)
 		List<Object> firstGrids = PitchKeyTools.createGrids(firstKeySig, firstMode);
-//		Integer[] mpcGrid = (Integer[]) firstGrids.get(0);
-//		String[] altGrid = (String[]) firstGrids.get(1);
-//		String[] pcGrid = (String[]) firstGrids.get(2);
-		
-		
-//		List<Integer[]> keyInfo = 
-//			Transcription.createKeyInfo(trans.getPiece(), Transcription.createMeterInfo(trans.getPiece()));
-//-*-		System.out.println("keyInfo");
-//-*-		keyInfo.forEach(in -> System.out.println(Arrays.toString(in)));
 
 		// Get meter information
 		Timeline tl = tab.getEncoding().getTimeline();
 		List<Integer[]> meterInfo = tab.getMeterInfo();
-//		List<Integer[]> meterInfo = tab.getTimeline().getMeterInfoOBS();
-//		System.out.println("meterInfo");
-//		meterInfo.forEach(in -> System.out.println(Arrays.toString(in)));
 
 		// Set ornamentation threshold to the duration value two levels below beat level
 		// n/1: beat level is W; two levels below is Q (RhythmSymbol.MINIM = 24)
 		// n/2: beat level is H; two levels below is E (RhythmSymbol.SEMIMINIM = 12)
 		// n/4: beat level is Q; two levels below is S (RhythmSymbol.FUSA = 6)
 		// n/8: beat level is E; two levels below is T (RhythmSymbol.SEMIFUSA = 3)
-		
-//		int ornThreshold = -1;
-//		List<Double> eighth = Transcription.createDurationLabel(new Integer[]{4*3});
-//		ornThreshold = (eighth.indexOf(1.0) + 1)*3; // *3 trp dur
-//		ornThreshold = RhythmSymbol.SEMIMINIM.getDuration();
-//		ornThreshold = RhythmSymbol.MINIM.getDuration();
 		int ornThreshold = RhythmSymbol.MINIM.getDuration() / meterInfo.get(0)[Transcription.MI_DEN];
-//		System.out.println(ornThreshold);
-		
-//		if (meterInfo.get(0)[Timeline.MI_DEN] == 2) {
-//			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // *3 trp dur
-//		}
-//		else if (meterInfo.get(0)[Timeline.MI_DEN] == 1) {
-//			ornThreshold = (Transcription.QUARTER.indexOf(1.0) + 1)*3; // *3 trp dur
-//		}
-//		else if (meterInfo.get(0)[Timeline.MI_NUM] == 4 && 
-//			meterInfo.get(0)[Timeline.MI_DEN] == 4) {
-//			ornThreshold = (Transcription.EIGHTH.indexOf(1.0) + 1)*3; // * 3 trp dur
-//		}
 
 		List<Integer[][]> gridAndMask = makeGridAndMask(trans, tab);
-		Integer[][] grid = gridAndMask.get(0);
-		Integer[][] mask = gridAndMask.get(1);
-		System.out.println("mask: " + Arrays.asList(mask[0]));
+		Integer[][] grid = gridAndMask.get(0); // notes in MIDI
+		Integer[][] mask = gridAndMask.get(1); // notes in tab
 //		System.out.println("G R I D");
-//		for (Integer[] in : grid) {
-//			System.out.println(Arrays.toString(in));
-//		}
+//		Arrays.stream(grid).forEach(in -> System.out.println(Arrays.asList(in)));		
 //		System.out.println("M A S K");	
-//		for (Integer[] in : mask) {
-//			System.out.println(Arrays.toString(in));
-//		}
+//		Arrays.stream(mask).forEach(in -> System.out.println(Arrays.asList(in)));
+		
 		List<List<Double>> voiceLabels = new ArrayList<List<Double>>();
-		StringBuffer res = new StringBuffer();
-		StringBuffer resCsv = new StringBuffer();
 		List<String> csv = new ArrayList<>();
-		int numMismatches = 0;
-		List<Integer> ornamentationInd = new ArrayList<>();
+		List<Integer> ornamentationInds = new ArrayList<>();
 		List<Integer> repetitionInds = new ArrayList<>();
 		List<Integer> fictaInds = new ArrayList<>();
-		List<Integer> otherInds = new ArrayList<>();
+		List<Integer> adaptationInds = new ArrayList<>();
+		List<Integer> specialOrnInds = new ArrayList<>();
 		List<Integer> activeVoices = new ArrayList<>();
 		List<Integer> currOrn = new ArrayList<>();
 		int indLastNonOrnChord = -1;
@@ -1011,237 +828,164 @@ public class TabMapper {
 		Rational onsetLastOrnChord = null;
 		// For each chord
 		for (int i = 0; i < grid.length; i++) {
-			System.out.println("==================== chord = " + i);
 			Integer[] currGrid = grid[i];
 			Integer[] currMask = mask[i];
 
 			// Only if the tablature has a note at this onset time
-			if (currMask[ONSET_IND + 1] != null) {
-				Rational currOnset = new Rational(currGrid[ONSET_IND], SMALLEST_DUR);
-				int currDur = currMask[(ONSET_IND + 1) + NUM_COURSES];
-				boolean onsetInGT = Collections.frequency(Arrays.asList(Arrays.copyOfRange(
-					currGrid, 2, currGrid.length)), null) != currGrid.length - 2;
-				int chordInd = btp[currMask[(ONSET_IND + 1) + 2*NUM_COURSES]][Tablature.CHORD_SEQ_NUM];
-//				String bar = 
-//					currMask[0] + " " + Tablature.getMetricPosition(new Rational(currMask[1], 
-//					SMALLEST_DUR), meterInfo)[1];
-				String bar = 
-					TimeMeterTools.getMetricPositionAsString(
+			if (currMask[PITCHES_IND] != null) {
+				Rational currOnset = new Rational(currMask[ONSET_IND], SMALLEST_DUR);
+				int currDur = currMask[(PITCHES_IND) + NUM_COURSES];
+				int chordInd = btp[currMask[(PITCHES_IND) + 2*NUM_COURSES]][Tablature.CHORD_SEQ_NUM];
+				String bmpStr = TimeMeterTools.getMetricPositionAsString(
 					tl.getMetricPosition(currMask[ONSET_IND])
-//					Utils.getMetricPosition(new Rational(currMask[ONSET_IND], SMALLEST_DUR), meterInfo)
 				);
-				
 
-				// Get pitches, arranged per voice (low-high), from GT
-				List<Integer> pitchesGT = 
-					Arrays.asList(Arrays.copyOfRange(currGrid, ONSET_IND+1, ONSET_IND+1 + numVoices));
-				// Get pitches and indices, arranged low-high, from tablature
-				List<Integer> pitchesTab = 
-					Arrays.asList(Arrays.copyOfRange(currMask, ONSET_IND+1, ONSET_IND+1 + NUM_COURSES));
-				List<Integer> indicesTab = 
-					Arrays.asList(Arrays.copyOfRange(currMask, ONSET_IND+1 + 2*NUM_COURSES, ONSET_IND+1 + 3*NUM_COURSES));
-				// Excluding any trailing null values
+				// Get pitches, arranged per voice (low-high), from model; can contain nulls
+				// NB: if there is a voice crossing, the list is not sorted
+				List<Integer> pitchesModel = Arrays.asList(
+					Arrays.copyOfRange(currGrid, PITCHES_IND, PITCHES_IND + numVoices)
+				);
+				// Get pitches and indices, arranged low-high, from tablature; exclude trailing nulls 
+				List<Integer> pitchesTab = Arrays.asList(
+					Arrays.copyOfRange(currMask, PITCHES_IND, PITCHES_IND + NUM_COURSES)
+				);
+				List<Integer> indicesTab = Arrays.asList(
+					Arrays.copyOfRange(currMask, PITCHES_IND + 2*NUM_COURSES, PITCHES_IND + 3*NUM_COURSES));
 				if (pitchesTab.contains(null)) {
 					pitchesTab = pitchesTab.subList(0, pitchesTab.indexOf(null));
 					indicesTab = indicesTab.subList(0, indicesTab.indexOf(null));
 				}
 
+				// If the chord is ornamental: add note index to currOrn and skip iteration.
 				// A chord is ornamental if
-				// a. it is a single onset in the tablature AND
-				// b. its duration is less than or equal to the ornamentation threshold AND
-				// c. there is no note at the current onset time in the MIDI
-				boolean isOrnamental = 
-					(pitchesTab.size() == 1) && (currDur <= ornThreshold) && !onsetInGT;
-//-*-				System.out.println("CHORD AT INDEX " + i);
-//-*-				System.out.println("--- specifics for this chord ---");
-//-*-				System.out.println("currGrid                " + Arrays.toString(currGrid));
-//-*-				System.out.println("currMask                " + Arrays.toString(currMask));
-//-*-				System.out.println("pitchesGT               " + pitchesGT);
-//-*-				System.out.println("pitchesTab              " + pitchesTab);
-//-*-				System.out.println("indicesTab              " + indicesTab);
-//-*-				System.out.println("currDur                 " + currDur);
-//-*-				System.out.println("currOrn                 " + currOrn);
-				
-				// If the chord is ornamental: add note index to running list and skip iteration
-				if (isOrnamental) {
+				// a. It is a single onset in the tablature AND
+				// b. Its duration is less than or equal to the ornamentation threshold AND
+				// c. There is no note at the current onset time in the model (i.e., currGrid, 
+				//    has only null values after from bar and onset values)
+				if ((pitchesTab.size() == 1) && (currDur <= ornThreshold) &&
+					Arrays.stream(Arrays.copyOfRange(currGrid, 2, currGrid.length)).allMatch(e -> e == null)) {
 					currOrn.add(indicesTab.get(0));
 					voiceLabels.add(null);
 				}
 				// If the chord is non-ornamental: map
 				else {
-//-*-					System.out.println("--- mapping tab to MIDI ---");
 					Integer[] key = keyInfo.size() == 1 ? firstKey : trans.getLocalKeyInfo(currOnset);
-//					Integer[] key = trans.getLocalKeyInfo(currOnset);
-//					Integer[] key = keyInfo.get(0); 
-					int keySig = keyInfo.size() == 1 ? firstKeySig : key[Transcription.KI_KEY]; // num b (<0) / # (>0)
-					int mode = keyInfo.size() == 1 ? firstMode : key[Transcription.KI_MODE]; // major (0) / minor (1)
-//					int base = PitchKeyTools.KEY_SIG_MPCS.get(keySig)[mode]; // LALALA
-//					int base = MEIExport.KEY_SIG_MPCS.get(keySig)[scale]%12;
-//					int base = MEIExport.KEY_SIGS.get(keySig)[scale]%12;
-//					List<Integer[]> fictaPairs = (mode == 0) ? fictaPairsMajor : fictaPairsMinor;
-//					List<Integer> intervals = (mode == 0) ? new ArrayList<Integer>(MAJOR) : new ArrayList<Integer>(MINOR);		
-//					List<Integer> baseIntervals = new ArrayList<>();
-//					intervals.forEach((interval) -> baseIntervals.add((interval + base)%12));
-					
+					int keySig = keyInfo.size() == 1 ? firstKeySig : key[Transcription.KI_KEY];
+					int mode = keyInfo.size() == 1 ? firstMode : key[Transcription.KI_MODE];
 					List<Object> grids = keyInfo.size() == 1 ? firstGrids : PitchKeyTools.createGrids(keySig, mode);
-//					Integer[] mpcGrid = (Integer[]) grids.get(0);
-//					String[] altGrid = (String[]) grids.get(1);
-//					String[] pcGrid = (String[]) grids.get(2);
-					
-//					// --> Add tab note to all GT voices that have pitch class
-					
-//					for (int p : pitchesTab) {
-//						String[] pa = (String[]) PitchKeyTools.spellPitch(
-//							p, keySig, Arrays.asList(new Object[]{mpcGrid, altGrid, pcGrid}), null
-//						).get(0);
-//						String pName = pa[0];
-//						String accid = pa[1];
-//						if (ja) {
-//							System.out.println("PITCH TAB = " + p + "; " + pName + " " + accid);
-//						}
-//					}
-//					System.out.println(pitchesGT);
-//					for (Integer p : pitchesGT) {
-//						if (p != null) {
-//							String[] pa = (String[]) PitchKeyTools.spellPitch(
-//								p, keySig, Arrays.asList(new Object[]{mpcGrid, altGrid, pcGrid}), null
-//							).get(0);
-//							String pName = pa[0];
-//							String accid = pa[1];
-//							if (ja) {
-//								System.out.println("PITCH MID = " + p + "; " + pName + " " + accid);
-//							}
-//						}
-//					}
-					
-					// 1. Map pitches in the tab to pitches in the MIDI
+
+					// 1. Do initial mapping (i.e., handle direct matches and ficta)
 					List<Object> initialMapping = mapTabChordToMIDI(
-						pitchesTab, indicesTab, pitchesGT, keySig, grids, numVoices
+						pitchesTab, indicesTab, pitchesModel, keySig, grids, numVoices
 					);
-					List<List<Integer>> intLists = (List<List<Integer>>) initialMapping.get(0);
-					List<Integer> pitchesNotInMIDI = intLists.get(0);
+					List<List<Integer>> initialIntLists = (List<List<Integer>>) initialMapping.get(0);
+					List<Integer> pitchesNotInMIDI = initialIntLists.get(0);
+					List<Integer> indPitchesNotInMIDI = initialIntLists.get(1);
+					List<Integer> nonMappedSNUPitches = initialIntLists.get(2);
+					List<Integer> mappedVoices = initialIntLists.get(3);
+					List<Integer> currActiveVoices = initialIntLists.get(4);
+					List<Integer> extendedSNUVoices = initialIntLists.get(5);
+					List<Integer> currFictaInds = initialIntLists.get(6);
 					List<Integer> pitchesNotInMIDIOriginal = new ArrayList<Integer>(pitchesNotInMIDI);
-					List<Integer> indPitchesNotInMIDI = intLists.get(1);
-					List<Integer> nonMappedSNUPitches = intLists.get(2);
-					List<Integer> mappedVoices = intLists.get(3);
-					List<Integer> currActiveVoices = intLists.get(4);
-					for (int v : currActiveVoices) {
-						if (!activeVoices.contains(v)) {
-							activeVoices.add(v);
+					List<List<Double>> voiceLabelsCurrChord = (List<List<Double>>) initialMapping.get(1);
+
+					// Update activeVoices if it does not yet contain all voices
+					if (activeVoices.size() < numVoices) {
+						currActiveVoices.forEach(v -> { if (!activeVoices.contains(v)) activeVoices.add(v); });
+						Collections.sort(activeVoices);
+						Collections.reverse(activeVoices);
+					}
+
+					if (currFictaInds.size() != 0) {
+						// Make CSV entries for ficta
+						for (int j = 0; j < currFictaInds.size(); j++) {
+							int ind = currFictaInds.get(j);
+							int pitch = btp[ind][Tablature.PITCH];
+							// Get voice for ficta note
+							int voice = -1;
+							String pNameTab = ((String[]) PitchKeyTools.spellPitch(
+								pitch, keySig, grids, null).get(0)
+							)[0];
+							for (int k = 0; k < pitchesModel.size(); k++) {
+								if (pitchesModel.get(k) != null) {
+									String pNameModel = ((String[]) PitchKeyTools.spellPitch(
+										pitchesModel.get(k), keySig, grids, null).get(0)
+									)[0];
+									if (pNameTab.equals(pNameModel)) {
+										voice = (numVoices-1) - k;
+										break;
+									}
+								}
+							}
+
+							csv.add(String.join(",", Arrays.stream(new Object[]{
+								ind, pitch, chordInd, bmpStr, voice, "n/a", "ficta"})
+								.map(String::valueOf).toArray(String[]::new)
+							));
+						}
+
+						// Add to lists
+						fictaInds.addAll(currFictaInds);
+						if (pitchesTab.size() == 1 && currDur <= ornThreshold) {
+							specialOrnInds.add(currFictaInds.get(0));
 						}
 					}
 
-					Collections.sort(activeVoices);
-					Collections.reverse(activeVoices);
-					List<Integer> extendedSNUVoices = intLists.get(5);
-					fictaInds.addAll(intLists.get(6));
-					List<List<Double>> voiceLabelsCurrChord = (List<List<Double>>) initialMapping.get(1);
-
-					System.out.println("AFTER mapTabChordToMIDI()");
-					System.out.println("pitchesNotInMIDI        " + pitchesNotInMIDI);
-					System.out.println("pitchesNotInMIDIOrig    " + pitchesNotInMIDIOriginal);
-					System.out.println("indPitchesNotInMIDI     " + indPitchesNotInMIDI);
-					System.out.println("mappedVoices            " + mappedVoices);
-					System.out.println("activeVoices            " + activeVoices);
-					System.out.println("nonMappedSNUPitches     " + nonMappedSNUPitches);
-					System.out.println("extendedSNUVoices       " + extendedSNUVoices);
-					System.out.println("fictaInds               " + fictaInds);
-					System.out.println("voiceLabelsCurrChord    " + voiceLabelsCurrChord);
-
-					// 2. Map any pitches that are in the tab but not in the MIDI
-					List<Integer[]> cheapestMappingTotal = null;
+					// 2. Complete mapping (i.e., handle repetitions and adaptations)
 					if (voiceLabelsCurrChord.contains(null)) {
-//-*-						System.out.println("--- mapping pitches not in MIDI ---");
+						List<Integer[]> cheapestMappingTotal = null;
 
 						// In case of possible consecutive tupletChord
 						List<Integer> prevPitches = null;
 						List<List<Double>> prevVoiceLabels = null;
-						if (lastNonOrnChordContainsTuplet && 
-							Arrays.asList(new Rational[]{new Rational(1, 1), new Rational(1, 2), 
-							new Rational(1, 4)}).contains(currOnset.sub(onsetLastOrnChord))) { // TODO
+						if (lastNonOrnChordContainsTuplet && Arrays.asList(
+							new Rational(1, 1), new Rational(1, 2), new Rational(1, 4)).contains(
+							currOnset.sub(onsetLastOrnChord))) { // TODO why these values?
 							prevPitches = pitchesTabLastNonOrnChordWithTuplet;
 							prevVoiceLabels = voiceLabelsLastNonOrnChordWithTuplet;
 						}
 
-						List<Object> completedMapping = 
-							mapPitchesNotInMIDI(pitchesTab, pitchesGT, pitchesNotInMIDI, 
-							indPitchesNotInMIDI, pitchesNotInMIDIOriginal, nonMappedSNUPitches, 
-							extendedSNUVoices, mappedVoices, voiceLabelsCurrChord, keyInfo, 
-							currOnset, trans, prevPitches, prevVoiceLabels);
-						List<List<Integer>> newIntLists = (List<List<Integer>>) completedMapping.get(0);
-						pitchesNotInMIDI = newIntLists.get(0);
-						indPitchesNotInMIDI = newIntLists.get(1);
-						pitchesNotInMIDIOriginal = newIntLists.get(2);
-						repetitionInds.addAll(newIntLists.get(3));
-//						fictaInds.addAll(newIntLists.get(4));
-						otherInds.addAll(newIntLists.get(4));
+						List<Object> completedMapping = mapPitchesNotInMIDI(
+							pitchesTab, pitchesModel, pitchesNotInMIDI, indPitchesNotInMIDI, 
+							pitchesNotInMIDIOriginal, nonMappedSNUPitches, extendedSNUVoices, 
+							mappedVoices, voiceLabelsCurrChord, keyInfo, currOnset, trans, 
+							prevPitches, prevVoiceLabels
+						);
+						List<List<Integer>> completedIntLists = (List<List<Integer>>) completedMapping.get(0);
+						pitchesNotInMIDI = completedIntLists.get(0);
+						indPitchesNotInMIDI = completedIntLists.get(1);
+						pitchesNotInMIDIOriginal = completedIntLists.get(2);
+						List<Integer> currRepetitionInds = completedIntLists.get(3);
+						List<Integer> currAdaptationInds = completedIntLists.get(4);
 						voiceLabelsCurrChord = (List<List<Double>>) completedMapping.get(1);
 						cheapestMappingTotal = (List<Integer[]>) completedMapping.get(2);
-						numMismatches += cheapestMappingTotal.size();
-						
 
-						System.out.println("----------------------------");
-						System.out.println("AFTER mapPitchesNotInMIDI()");
-						System.out.println("pitchesNotInMIDI        " + pitchesNotInMIDI);
-						System.out.println("pitchesNotInMIDIOrig    " + pitchesNotInMIDIOriginal);
-						System.out.println("indPitchesNotInMIDI     " + indPitchesNotInMIDI);
-						System.out.println("mappedVoices            " + mappedVoices);
-						System.out.println("activeVoices            " + activeVoices);
-						System.out.println("nonMappedSNUPitches     " + nonMappedSNUPitches);
-						System.out.println("extendedSNUVoices       " + extendedSNUVoices);
-						System.out.println("voiceLabelsCurrChord    " + voiceLabelsCurrChord);
-						System.out.println("cheapestMappingTotal");
-						cheapestMappingTotal.forEach(in -> System.out.println(Arrays.asList(in)));
-//						if (i == 2) {
-//							System.exit(0);
-//						}
-						
-						Rational o = tl.getMetricPosition(currMask[ONSET_IND])[1];
-						o.reduce();
-						String oStr = !o.equals(Rational.ZERO) ? o.toString() : "0";
-						res.append("no match for pitches " + pitchesNotInMIDIOriginal + " at indices " + 
-							indPitchesNotInMIDI + " (bar " + currMask[0] + "; onset " + oStr + ")" + "\r\n");
-						res.append("pitches in tab chord : " + pitchesTab + "\r\n");
-						res.append("cheapest mapping (total cost " + 
-							ToolBox.sumListInteger(ToolBox.getItemsAtIndex(cheapestMappingTotal, 2))+ 
-							"):"  + "\r\n");
+						// Make CSV entries for repetitions and adaptations
 						for (int j = 0; j < cheapestMappingTotal.size(); j++) {
-							String curr = "";
 							Integer[] in = cheapestMappingTotal.get(j);
-							int p = in[1];
-							int indexOfPitch = indPitchesNotInMIDI.get(pitchesNotInMIDIOriginal.indexOf(p));
-
+							int pitch = in[1];
+							int ind = indPitchesNotInMIDI.get(pitchesNotInMIDIOriginal.indexOf(pitch));
 							// In case of second unison pitch
-							if (Collections.frequency(pitchesNotInMIDIOriginal, p) == 2 &&
-								ToolBox.getItemsAtIndex(cheapestMappingTotal, 1).lastIndexOf(p) == j) {
-								indexOfPitch = indPitchesNotInMIDI.get(pitchesNotInMIDIOriginal.lastIndexOf(p));
+							if (Collections.frequency(pitchesNotInMIDIOriginal, pitch) == 2 &&
+								ToolBox.getItemsAtIndex(cheapestMappingTotal, 1).lastIndexOf(pitch) == j) {
+								ind = indPitchesNotInMIDI.get(pitchesNotInMIDIOriginal.lastIndexOf(pitch));
 							}
-							
-							curr += indexOfPitch + "," + p + "," + chordInd + "," + bar + "," +
-								in[0] + "," + in[2] + ",";
-							res.append("  voice " + in[0] + " for pitch " + p + " (at cost " + in[2] + ")");
-							if (repetitionInds.contains(indexOfPitch)) {
-								res.append(" --> repetition");
-								curr += "repetition";
-							}
-							else if(fictaInds.contains(indexOfPitch)) {
-								res.append(" --> ficta");
-								curr += "ficta";
-							}
-							else if(otherInds.contains(indexOfPitch)) {
-								res.append(" --> other");
-								curr += "other";
-							}
-							res.append("\r\n");
-							csv.add(curr);
+
+							csv.add(String.join(",", Arrays.stream(new Object[]{
+								ind, pitch, chordInd, bmpStr, in[0], in[2], 
+								currRepetitionInds.contains(ind) ? "repetition" : "adaptation"})
+								.map(String::valueOf).toArray(String[]::new)
+							));
 						}
-						List<List<Integer>> voices = new ArrayList<>();
-//						System.out.println(voiceLabelsCurrChord);
-						voiceLabelsCurrChord.forEach(l -> 
-							voices.add(LabelTools.convertIntoListOfVoices(l)));
-						voices.forEach(l -> Collections.reverse(l));
-						res.append("voices for chord: " + voices + "\r\n");
-						res.append("\r\n");
+
+						// Add to lists
+						repetitionInds.addAll(currRepetitionInds);
+						adaptationInds.addAll(currAdaptationInds);
+						if (pitchesTab.size() == 1 && currDur <= ornThreshold) {
+							specialOrnInds.add(
+								currRepetitionInds.size() != 0 ? currRepetitionInds.get(0) : currAdaptationInds.get(0)
+							);
+						}
 					}
 					voiceLabels.addAll(voiceLabelsCurrChord);
 
@@ -1249,65 +993,35 @@ public class TabMapper {
 					if (!currOrn.isEmpty()) {						
 						// Add the ornamental notes to the voice going with the closest pitch
 						if (includeOrnamentation) {
-//-*-							System.out.println("--- mapping preceding ornamental notes ---");
 							List<Integer> ornPitches = new ArrayList<>();
 							currOrn.forEach(ind -> ornPitches.add(btp[ind][Tablature.PITCH]));
-							int closestVoice = 
-								mapPrecedingOrnamentalNotes(ornPitches, pitchesTab, voiceLabelsCurrChord,
-								i, indLastNonOrnChord, pitchesTabLastNonOrnChord, voiceLabelsLastNonOrnChord,
-								connection);
+							int closestVoice = mapPrecedingOrnamentalNotes(
+								ornPitches, pitchesTab, voiceLabelsCurrChord, i, indLastNonOrnChord, 
+								pitchesTabLastNonOrnChord, voiceLabelsLastNonOrnChord, connection
+							);
 
-							List<Double> vl = new ArrayList<Double>(emptyVoiceLabel);
-							vl.set(closestVoice, 1.0);
-
-							// Replace the voiceLabels at the indices in currOrn
-							for (int ind : currOrn) {
-								ornamentationInd.add(ind);
-								voiceLabels.set(ind, vl);
-							}
-//-*-							System.out.println("ornPitches              " + ornPitches );
-//-*-							System.out.println("closestVoice            " + closestVoice);
-							
-							numMismatches += currOrn.size();
-							res.append("pitches " + ornPitches + " at indices " + currOrn + 
-								" flagged as ornamentation" + "\r\n");
-							res.append("voice for ornamental note(s): " + closestVoice + "\r\n");
-							res.append("\r\n");
-
-							for (int j = 0; j < currOrn.size(); j++) {
-								int ind = currOrn.get(j);
-								Integer[] ornChMask = null;
-								for (int k = i-1; k >=0; k--) {
-									Integer[] prevMask = mask[k];
-									// prevMask will contain only one index (or none), so only the
-									// first index position needs to be checked
-//									System.out.println(Arrays.toString(prevMask));
-//									System.out.println((ind));
-//									System.out.println(k);
-//									System.out.println(prevMask[(ONSET_IND + 1) + 2*NUM_COURSES]);
-									if (prevMask[(ONSET_IND + 1) + 2*NUM_COURSES] != null &&
-										prevMask[(ONSET_IND + 1) + 2*NUM_COURSES] == ind) {
-//									if (prevMask[(ONSET_IND + 1) + 2*NUM_COURSES] == ind) {
-										ornChMask = prevMask;
-										break;
-									}
-								}
-								csv.add(ind + "," + ornPitches.get(j) + "," + 
-									btp[ind][Tablature.CHORD_SEQ_NUM] + "," + 
-//									ornChMask[0] + " " + Tablature.getMetricPosition(
-//									new Rational(ornChMask[1], SMALLEST_DUR), meterInfo)[1] + "," +	
+							// Make CSV entries for ornamentations
+							for (int ind : currOrn) {								
+								csv.add(String.join(",", Arrays.stream(new Object[]{
+									ind, btp[ind][Tablature.PITCH], btp[ind][Tablature.CHORD_SEQ_NUM], 
 									TimeMeterTools.getMetricPositionAsString(
-										tl.getMetricPosition(ornChMask[ONSET_IND])
-//										Utils.getMetricPosition(new Rational(ornChMask[ONSET_IND], SMALLEST_DUR), meterInfo)
-									) 
-									+ "," + closestVoice + "," + "n/a" + "," + "ornamentation");
+										tl.getMetricPosition(btp[ind][Tablature.ONSET_TIME])
+									), closestVoice, "n/a", "ornamentation"})
+									.map(String::valueOf).toArray(String[]::new)
+								));
 							}
+
+							// Replace voiceLabels in currOrn
+							List<Double> vl = Transcription.createVoiceLabel(new Integer[]{closestVoice});
+							currOrn.forEach(ind -> voiceLabels.set(ind, vl));
 						}
+						// Add to list (also if includeOrnamentation == false)
+						ornamentationInds.addAll(currOrn);
 						currOrn.clear();
 					}
 
-					// Set information needed for assignment of any ornamental notes or consecutive
-					// tuplet chords
+					// 4. Set information needed for assignment of any ornamental notes or 
+					// consecutive tuplet chords
 					indLastNonOrnChord = i;
 					pitchesTabLastNonOrnChord = pitchesTab;
 					voiceLabelsLastNonOrnChord = voiceLabelsCurrChord;
@@ -1327,121 +1041,16 @@ public class TabMapper {
 		}
 		csv = ToolBox.bubbleSortStringList(csv, ",");
 		csv.add(0, "note,pitch,chord,bar,mapped voice,cost,category");
-		csv.forEach(s -> resCsv.append(s + "\r\n"));
-//		for (String s : csv) {
-//			System.out.println(s);
-//		}
 
-//		System.out.println("voiceLabels");
-//		for (int i = 0; i < voiceLabels.size(); i++) {
-//			System.out.println("i = " + i + "; voice label = " + voiceLabels.get(i));
-//		}
-
-//		System.out.println(btp.length);
-//		System.out.println(Collections.frequency(voiceLabels, null));
-		
-		int numNotes = btp.length - Collections.frequency(voiceLabels, null);
-		int numNotesTrans = trans.getBasicNoteProperties().length;
-		
-		res.append("number of notes in tab:    " + numNotes + "\r\n");
-		res.append("number of mismatches:      " + numMismatches + ", of which " + "\r\n" + 
-				   "                           " + repetitionInds.size() + " repetitions" + "\r\n" +
-				   "                           " + ornamentationInd.size() + " ornamentations" + "\r\n" +
-				   "                           " + fictaInds.size() + " ficta" + "\r\n" +
-				   "                           " + otherInds.size() + " other" + "\r\n");
-		
-		int Mo = ornamentationInd.size();
-		int Mr = repetitionInds.size();
-		int Mf = fictaInds.size();
-		int Ma = otherInds.size();
-
-		// See ISMIR paper
-		// m_(o,r,f): all mismatches count
-		double morf = (numNotes - (Mo + Mr + Mf + Ma)) / (double) numNotes; 
-		// m_o: repetitions and ficta do not count
-		double mo  = (numNotes - (Mo + Ma)) / (double) numNotes; 
-		double m = (numNotes - Ma) / (double) numNotes;
-		double po = (Mo / (double) numNotes); // munch
-
-		resultsOverAllPieces.append(
-//			((shortName.length() < 4) ? shortName : shortName.substring(0, 3)) + "\t"  +
-			shortNames.get(pieceIndex) + "\t" +
-			numNotesTrans + "\t" + 	
-			numNotes + "\t" + 
-			numMismatches + "\t" + 
-			ornamentationInd.size() + "\t" + 
-			repetitionInds.size() + "\t" + 
-			fictaInds.size() + "\t" + 
-			otherInds.size() + "\t" +
-			ToolBox.formatDouble(morf, 0, 5) + "\t" +
-			ToolBox.formatDouble(mo, 0, 5) + "\t" +
-			ToolBox.formatDouble(m, 0, 5) + "\t" +
-			ToolBox.formatDouble(po, 0, 5) + // munch
-			"\r\n"
-		);
-		Integer[] currInts = new Integer[]{
-			null, 
-			numNotesTrans, numNotes, numMismatches, 
-			ornamentationInd.size(), repetitionInds.size(), fictaInds.size(), otherInds.size(),
-			null, null, null,
-			null // munch
-		};
-		Double[] currDoubles = new Double[]{
-			null, 
-			null, null, null, null, null, null, null,
-			morf, mo, m,
-			po // munch
-		};
-		resultsOverAllPiecesArrStr[pieceIndex][0] = shortNames.get(pieceIndex); 
-		for (int i = 0; i < currInts.length; i++) {
-			if (currInts[i] != null) {
-				resultsOverAllPiecesArrStr[pieceIndex][i] = String.valueOf(currInts[i]);
-				intsToAvg[i] += currInts[i]; 
-			}
-			else if (currDoubles[i] != null) {
-				String d = ToolBox.formatDouble(currDoubles[i], 0, 5); // munch
-//				if (i == COLS.indexOf("p_o")) {
-//					d = ToolBox.formatDouble(currDoubles[i], 2, 5);
-//				}
-				resultsOverAllPiecesArrStr[pieceIndex][i] = d;
-				doublesToAvg[i] += currDoubles[i];
-			}
-		}
-//		resultsOverAllPiecesArr[pieceIndex] = new double[]{
-//			pieceIndex, 
-//			numNotesTrans, 	
-//			numNotes,
-//			numMismatches,
-//			ornamentationInd.size(), 
-//			repetitionInd.size(), 
-//			fictaInd.size(),
-//			otherInd.size(),
-////			ToolBox.formatDouble(morf, 0, 5),
-//			morf,
-////			ToolBox.formatDouble(mo, 0, 5)
-//			mo
-////			ToolBox.formatDouble(m, 0, 5) + 
-//		};
-
-		res.append("percentage of matches:     " + 
-			(1.0 - (numMismatches/(double) numNotes)) + " (only full matches)" + "\r\n");
-		res.append("                           " + 
-			(1.0 - (numMismatches-(repetitionInds.size() + fictaInds.size()))/(double) numNotes) + 
-			" (including repetitions and ficta)" + "\r\n");
-		res.append("                           " + 
-			(1.0 - (numMismatches-(ornamentationInd.size() + repetitionInds.size() + 
-			fictaInds.size()))/(double) numNotes) + " " + 
-			"(including ornamentations, repetitions, ficta)" + "\r\n");
-//		System.out.println(res);
-		
 		List<List<Integer>> mismatchInds = new ArrayList<>();
 		mismatchInds.add(Transcription.INCORRECT_IND, null);
-		mismatchInds.add(Transcription.ORNAMENTATION_IND, ornamentationInd);
+		mismatchInds.add(Transcription.ORNAMENTATION_IND, ornamentationInds);
 		mismatchInds.add(Transcription.REPETITION_IND, repetitionInds);
 		mismatchInds.add(Transcription.FICTA_IND, fictaInds);
-		mismatchInds.add(Transcription.OTHER_IND, otherInds);
-					
-		return Arrays.asList(new Object[]{voiceLabels, mismatchInds, res.toString(), resCsv.toString()});
+		mismatchInds.add(Transcription.ADAPTATION_IND, adaptationInds);
+		mismatchInds.add(Transcription.SPECIAL_ORN_IND, specialOrnInds);
+
+		return Arrays.asList(new Object[]{voiceLabels, mismatchInds, csv});
 	}
 
 
@@ -1499,7 +1108,7 @@ public class TabMapper {
 	 * The grid contains, per chord: bar, onset, pitches per voice (starting at lowest voice), 
 	 * durations per voice (starting at lowest voice).
 	 * The mask contains, per chord: bar, onset, pitches (low to high), durations (i.e., minimum 
-	 * duration), indices
+	 * duration), tab note indices
 	 * 
 	 * @param trans
 	 * @param tab
@@ -1509,11 +1118,6 @@ public class TabMapper {
 		Integer[][] bnp = trans.getBasicNoteProperties();
 		Integer[][] btp = tab.getBasicTabSymbolProperties();
 		Timeline tl = tab.getEncoding().getTimeline();
-		
-		System.out.println("btpppppp: " + Arrays.asList(btp[0]));
-		System.out.println("btpppppp: " + Arrays.asList(btp[0]));
-		System.out.println("btpppppp: " + Arrays.asList(btp[1]));
-		System.out.println("btpppppp: " + Arrays.asList(btp[1]));
 
 		// Determine smallest duration in MIDI (currently simply set to Tablature.SMALLEST_RHYTHMIC_VALUE)
 		int smallestDur = -1;
@@ -1558,7 +1162,7 @@ public class TabMapper {
 		// Make grid; initialise with all values set to null  
 		NotationSystem score = trans.getScorePiece().getScore();
 		int numVoices = score.size();
-		Integer[][] grid = new Integer[allOnsetTimes.size()][(ONSET_IND + 1) + 2*numVoices];
+		Integer[][] grid = new Integer[allOnsetTimes.size()][PITCHES_IND + 2*numVoices];
 
 		// Set bars and onsets
 		for (int i = 0; i < allOnsetTimes.size(); i++) {
@@ -1581,15 +1185,15 @@ public class TabMapper {
 					ToolBox.getItemsAtIndexRational(allOnsetTimes, 0);
 				int gridRowInd = allOnsetTimesActual.indexOf(n.getMetricTime()); 
 				// Add pitch at index of voice i
-				grid[gridRowInd][(ONSET_IND + 1) + ((numVoices-1)-i)] = n.getMidiPitch();
+				grid[gridRowInd][PITCHES_IND + ((numVoices-1)-i)] = n.getMidiPitch();
 				// Add duration at index of voice i
-				grid[gridRowInd][(ONSET_IND + 1) + numVoices + ((numVoices-1)-i)] = 
+				grid[gridRowInd][PITCHES_IND + numVoices + ((numVoices-1)-i)] = 
 					n.getMetricDuration().mul(smallestDur).getNumer(); // denominator is always 1 because of multiplication with smallest rhythmic value
 			}
 		}
 					
 		// Make mask; initialise with all values set to null
-		Integer[][] mask = new Integer[allOnsetTimes.size()][(ONSET_IND + 1) + 3*NUM_COURSES];
+		Integer[][] mask = new Integer[allOnsetTimes.size()][PITCHES_IND + 3*NUM_COURSES];
 		
 		// Set bars and onsets
 		for (int i = 0; i < allOnsetTimes.size(); i++) {
@@ -1615,9 +1219,9 @@ public class TabMapper {
 			Integer[] currRow = mask[allOnsetTimesRounded.indexOf(new Rational(onset, smallestDur))];
 			int chordSize = btp[i][Tablature.CHORD_SIZE_AS_NUM_ONSETS];
 			for (int j = i; j < i + chordSize; j++) {
-				currRow[(ONSET_IND + 1) + (j-i)] = btp[j][Tablature.PITCH];
-				currRow[(ONSET_IND + 1) + NUM_COURSES + (j-i)] = btp[j][Tablature.MIN_DURATION];
-				currRow[(ONSET_IND + 1) + 2*NUM_COURSES + (j-i)] = j;
+				currRow[PITCHES_IND + (j-i)] = btp[j][Tablature.PITCH];
+				currRow[PITCHES_IND + NUM_COURSES + (j-i)] = btp[j][Tablature.MIN_DURATION];
+				currRow[PITCHES_IND + 2*NUM_COURSES + (j-i)] = j;
 			}
 			i += (chordSize-1);
 		}
@@ -1633,7 +1237,10 @@ public class TabMapper {
 	 * @param pitchesTab
 	 * @param indicesTab
 	 * @param pitchesGT
+	 * @param keySig
+	 * @param grids
 	 * @param numVoices
+	 * 
 	 * @return A {@code <List>} containing
 	 * <ul>
 	 * <li>As element 0: a {@code <List>} of {@code <List>}s, containing
@@ -1692,12 +1299,7 @@ public class TabMapper {
 					String[] paGT = (String[]) PitchKeyTools.spellPitch(pitchInGT, keySig, grids, null).get(0);
 					String pNameGT = paGT[0];
 					int octGT = PitchKeyTools.getOctave(pitchInGT);
-					boolean isFicta = (pitchInGT != pitchInTab && (pNameGT.equals(pNameTab) && octGT == octTab)); 
-//					if (ja) {
-//						System.out.println("i " + i + " " + "j " + j);
-//						System.out.println(pNameTab + " " + pNameGT);
-//					}
-
+					boolean isFicta = (pitchInGT != pitchInTab && (pNameGT.equals(pNameTab) && octGT == octTab));
 					if (pitchInGT == pitchInTab || isFicta) {
 						if (isFicta) {
 							fictaInds.add(pitchInd);
@@ -1749,13 +1351,15 @@ public class TabMapper {
 									currVoiceLabel.set(voice, 1.0);
 								}
 								else {
-									nonMappedSNUPitches.add(pitchInTab);
-									System.out.println("NON-MAPPED SNU CASE --> check code!");
-									System.out.println(pitchesTab);
-									System.out.println(pitchInTab);
-									System.out.println(pitchesGT);
-									System.out.println(pitchInGT);
+//									nonMappedSNUPitches.add(pitchInTab);
+//									System.out.println("NON-MAPPED SNU CASE --> check code!");
+//									System.out.println(indicesTab);
+//									System.out.println(pitchesTab);
+//									System.out.println(pitchInTab);
+//									System.out.println(pitchesGT);
+//									System.out.println(pitchInGT);
 									if (isFicta) {
+										System.out.println("Non-mapped SNU case and ficta--> check code!");
 										System.exit(0);
 									}
 								}
@@ -1917,17 +1521,17 @@ public class TabMapper {
 			}
 		}
 		
-		System.out.println("* * * * * * * * * *");
-		System.out.println("pitchesTab " + pitchesTab);
-		System.out.println("pitchesGT " + pitchesGT);
-		System.out.println("pitchesNotInMIDI " + pitchesNotInMIDI);
-		System.out.println("indPitchesNotInMIDI " + indPitchesNotInMIDI);
-		System.out.println("pitchesNotInMIDIOriginal " + pitchesNotInMIDIOriginal);
-		System.out.println("nonMappedSNUPitches " + nonMappedSNUPitches);
-		System.out.println("extendedSNUVoices " + extendedSNUVoices);
-		System.out.println("mappedVoices " + mappedVoices);
-		System.out.println("voiceLabelsCurrChord " + voiceLabelsCurrChord);
-		System.out.println("* * * * * * * * * *");
+//l		System.out.println("* * * * * * * * * *");
+//l		System.out.println("pitchesTab " + pitchesTab);
+//l		System.out.println("pitchesGT " + pitchesGT);
+//l		System.out.println("pitchesNotInMIDI " + pitchesNotInMIDI);
+//l		System.out.println("indPitchesNotInMIDI " + indPitchesNotInMIDI);
+//l		System.out.println("pitchesNotInMIDIOriginal " + pitchesNotInMIDIOriginal);
+//l		System.out.println("nonMappedSNUPitches " + nonMappedSNUPitches);
+//l		System.out.println("extendedSNUVoices " + extendedSNUVoices);
+//l		System.out.println("mappedVoices " + mappedVoices);
+//l		System.out.println("voiceLabelsCurrChord " + voiceLabelsCurrChord);
+//l		System.out.println("* * * * * * * * * *");
 
 		Rational first = new Rational(
 			trans.getBasicNoteProperties()[0][Transcription.ONSET_TIME_NUMER],
@@ -1963,7 +1567,7 @@ public class TabMapper {
 		boolean isConsecutiveTupletChord = false;
 		List<Integer[]> cheapestMappingTotal = new ArrayList<>();
 		for (int iter = 0; iter < iterations; iter++) {
-			System.out.println("iteration               " + iter);
+//l			System.out.println("iteration               " + iter);
 			// 1. Iteration 0: remove all already mapped voices from availableVoices
 			List<Integer> availableVoices = new ArrayList<>(allVoices);
 			if (iter == 0) {  
@@ -1975,7 +1579,7 @@ public class TabMapper {
 					continue;
 				}
 			}
-			System.out.println("LA LA LA available " + availableVoices);
+//l			System.out.println("LA LA LA available " + availableVoices);
 
 			// 2. For each available voice, get the pitch of the last note before currOnset, 
 			// and store voice and pitch together
@@ -1983,11 +1587,11 @@ public class TabMapper {
 				getLastPitchInVoices(availableVoices, numVoices, currOnset, trans);
 			List<Integer> activeAvailableVoices = 
 				ToolBox.getItemsAtIndex(lastPitchInAvailableVoices, 0);
-			System.out.println("LA LA LA lastPitchInAvailable");  
-			for (Integer[] in : lastPitchInAvailableVoices) {
-				System.out.println("  " + Arrays.asList(in));
-			}
-			System.out.println("LA LA LA activeAvailableVoices " + activeAvailableVoices);
+//l			System.out.println("LA LA LA lastPitchInAvailable");  
+//l			for (Integer[] in : lastPitchInAvailableVoices) {
+//l				System.out.println("  " + Arrays.asList(in));
+//l			}
+//l			System.out.println("LA LA LA activeAvailableVoices " + activeAvailableVoices);
 
 			// If there are more pitches not in MIDI than there are active available voices: one 
 			// or more voices must be assigned multiple notes. Add voice-pitch pairs for all newly 
@@ -2002,7 +1606,7 @@ public class TabMapper {
 						isConsecutiveTupletChord = true;
 						System.out.println("isConsecutiveTupletChord in " + trans.getName());
 					}
-					System.out.println("AIAIAIAIAIA");
+//l					System.out.println("AIAIAIAIAIA");
 	
 					for (int j = 0; j < mappedVoices.size(); j++) {
 						int mappedVoice = mappedVoices.get(j);
@@ -2022,10 +1626,10 @@ public class TabMapper {
 					}
 					lastPitchInAvailableVoices = ToolBox.sortBy(lastPitchInAvailableVoices, 0);
 					Collections.reverse(lastPitchInAvailableVoices);
-					System.out.println("NU NU NU lastPitchInAvailable");  
-					for (Integer[] in : lastPitchInAvailableVoices) {
-						System.out.println("  " + Arrays.asList(in));
-					}
+//l					System.out.println("NU NU NU lastPitchInAvailable");  
+//l					for (Integer[] in : lastPitchInAvailableVoices) {
+//l						System.out.println("  " + Arrays.asList(in));
+//l					}
 				}
 //			}
 //-*-			System.out.println("activeAvailableVoices   " + activeAvailableVoices);
@@ -2040,20 +1644,20 @@ public class TabMapper {
 			if (pitchesTab.size() > numVoices) {
 				// Iteration 0
 				if (pitchesNotInMIDI.size() >= availableVoices.size()) {
-					System.out.println("iter 0");
+//l					System.out.println("iter 0");
 					subsetsOfPitchesNotInMIDI = 
 						ToolBox.getSubsets(pitchesNotInMIDI, availableVoices.size());
-					System.out.println("pnim " + pitchesNotInMIDI);
-					System.out.println("av " + availableVoices);
-					System.out.println(subsetsOfPitchesNotInMIDI);
+//l					System.out.println("pnim " + pitchesNotInMIDI);
+//l					System.out.println("av " + availableVoices);
+//l					System.out.println(subsetsOfPitchesNotInMIDI);
 				}
 				// Iteration 1-2, when items have been removed from pitchesNotInMIDI
 				if (pitchesNotInMIDI.size() < availableVoices.size()) {
-					System.out.println("iter 1-2");
+//l					System.out.println("iter 1-2");
 					subsetsOfPitchesNotInMIDI.add(pitchesNotInMIDI);
-					System.out.println("pnim " + pitchesNotInMIDI);
-					System.out.println("av " + availableVoices);
-					System.out.println(subsetsOfPitchesNotInMIDI);
+//l					System.out.println("pnim " + pitchesNotInMIDI);
+//l					System.out.println("av " + availableVoices);
+//l					System.out.println(subsetsOfPitchesNotInMIDI);
 				}
 			}
 			else {
@@ -2099,23 +1703,23 @@ public class TabMapper {
 //					}
 //				}
 //				else {
-					System.out.println("ELSE!");
-					System.out.println(currSubset);
-					System.out.println(comb.size());
-					System.out.println("COMB");
-					System.out.println(lastPitchInAvailableVoices.size());
+//l					System.out.println("ELSE!");
+//l					System.out.println(currSubset);
+//l					System.out.println(comb.size());
+//l					System.out.println("COMB");
+//l					System.out.println(lastPitchInAvailableVoices.size());
 					List<Integer[]> currCheapestMapping = getCheapestMapping(
 						currSubset, comb, lastPitchInAvailableVoices
 					);
-					System.out.println("currCheapestMapping");
-					System.out.println(currCheapestMapping);
+//l					System.out.println("currCheapestMapping");
+//l					System.out.println(currCheapestMapping);
 					int currCheapest = 
 						ToolBox.sumListInteger(ToolBox.getItemsAtIndex(currCheapestMapping, 2));
 					if (currCheapest < cheapest) {
 						cheapest = currCheapest;
 						cheapestMapping = currCheapestMapping;
 					}
-					currCheapestMapping.forEach(in -> System.out.println(Arrays.asList(in)));
+//l					currCheapestMapping.forEach(in -> System.out.println(Arrays.asList(in)));
 					// If not all voices have been active in the model yet, currSubset
 					// can be greater than lastPitchInAvailableVoices. In this case, 
 					// the pitch(es) that have not been mapped must be mapped additionally
@@ -2150,21 +1754,21 @@ public class TabMapper {
 //				}
 			}
 			
-			System.out.println("- - - - - - - - -");
-			cheapestMapping.forEach(in -> System.out.println(Arrays.asList(in)));
-			System.out.println("- - - - - - - - -");
+//l			System.out.println("- - - - - - - - -");
+//l			cheapestMapping.forEach(in -> System.out.println(Arrays.asList(in)));
+//l			System.out.println("- - - - - - - - -");
 			// In the case of a non-mapped SNU: if this pitch is mapped onto one of the two voices 
 			// with the same pitch in the GT, it is not a mismatch and can be removed from cheapestMapping
 			// NB In the case of two iterations, only the iteration in which the pitch is mapped 
 			// must be checked; this is what the part after the && is for
 			List<Integer> currMappedPitches = ToolBox.getItemsAtIndex(cheapestMapping, 1); 
-			System.out.println(nonMappedSNUPitches);
-			System.out.println(currMappedPitches);
+//l			System.out.println(nonMappedSNUPitches);
+//l			System.out.println(currMappedPitches);
 //			System.exit(0);
 			if (nonMappedSNUPitches.size() != 0 && 
 				currMappedPitches.contains(nonMappedSNUPitches.get(0))) {
 				System.out.println("This happened.");
-				System.exit(0);
+//				System.exit(0);
 				int currNonMappedSNUPitch = nonMappedSNUPitches.get(0); // contains 1 pitch
 				int ind = currMappedPitches.indexOf(currNonMappedSNUPitch);
 				int currNonMappedSNUVoice = ToolBox.getItemsAtIndex(cheapestMapping, 0).get(ind);
@@ -2226,9 +1830,16 @@ public class TabMapper {
 				int pitch = in[1];
 				int cost = in[2];
 				int pitchInd = indPitchesNotInMIDI.get(pitchesNotInMIDIOriginal.indexOf(pitch));
+				// If pitchesNotInMIDIOriginal (and pitchesNotInMIDI -- at this point they are still 
+				// the same) contains a unison, pitch appears twice. If repetitionInds or otherInds 
+				// already contains pitchInd, pitchInd is the index of the *upper* unison note
+				boolean pitchIsInUnison = Collections.frequency(pitchesNotInMIDIOriginal, pitch) == 2 ? true : false;
+				int lastPitchInd = indPitchesNotInMIDI.get(pitchesNotInMIDIOriginal.lastIndexOf(pitch));
+
 				// Check for repetition
 				if (cost == 0) {
-					repetitionInds.add(pitchInd);
+					repetitionInds.add(repetitionInds.contains(pitchInd) ? lastPitchInd : pitchInd);
+//					repetitionInds.add(pitchInd);
 				}
 				// If not repetition: adaptation
 				else {
@@ -2269,7 +1880,8 @@ public class TabMapper {
 					
 					// If not ficta: adaptation
 //					else {
-					otherInds.add(pitchInd);
+					otherInds.add(otherInds.contains(pitchInd) ? lastPitchInd : pitchInd);
+//					otherInds.add(pitchInd);
 //					}
 				}
 			}
@@ -2589,11 +2201,11 @@ public class TabMapper {
 	// TESTED
 	static List<Integer[]> getCheapestMapping(List<Integer> pitches, List<List<Integer[]>> comb, 
 		List<Integer[]> lastPitchInAvailableVoices) {
-		System.out.println("--> " + pitches);
-		if (pitches.equals(Arrays.asList(59, null))) {
-			System.out.println("JAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-			lastPitchInAvailableVoices.forEach(in -> System.out.println(Arrays.asList(in)));
-		}
+//l		System.out.println("--> " + pitches);
+//l		if (pitches.equals(Arrays.asList(59, null))) {
+//l			System.out.println("JAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+//l			lastPitchInAvailableVoices.forEach(in -> System.out.println(Arrays.asList(in)));
+//l		}
 		List<Integer[]> cheapestMapping = null;
 		int cheapest = Integer.MAX_VALUE;
 		for (int j = 0; j < comb.size(); j++) {
