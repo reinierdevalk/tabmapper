@@ -172,8 +172,10 @@ public class TabMapper {
 
 
 	public static void main(String[] args) {
+		boolean dev = args.length == 0 ? true : args[0].equals(String.valueOf(true));
+		Map<String, String> paths = PathTools.getPaths(dev);
+
 		// Paths
-		Map<String, String> paths = PathTools.getPaths();
 		String tmp = paths.get("TABMAPPER_PATH");
 		String inPathTab = PathTools.getPathString(Arrays.asList(tmp, TAB_DIR));
 		String inPathMIDI = PathTools.getPathString(Arrays.asList(tmp, MIDI_DIR));

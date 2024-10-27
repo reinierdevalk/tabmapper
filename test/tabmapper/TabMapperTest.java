@@ -1,5 +1,11 @@
 package tabmapper;
 
+import static org.junit.Assert.*;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,22 +15,21 @@ import java.util.Map;
 import de.uos.fmt.musitech.utility.math.Rational;
 import external.Tablature;
 import external.Transcription;
-import junit.framework.TestCase;
 import tools.ToolBox;
 import tools.path.PathTools;
 
-public class TabMapperTest extends TestCase {
+public class TabMapperTest {
 
 	private File midiTestpiece;
 	private File encodingTestpiece;
 	
-	protected void setUp() throws Exception {
-		super.setUp();
+	@Before
+	public void setUp() throws Exception {
 //		Runner.setPathsToCodeAndData(UI.getRootDir(), false);
 //		encodingTestpiece = new File(Runner.encodingsPathTest + "testpiece.tbp");
 //		midiTestpiece = new File(Runner.midiPathTest + "testpiece.mid");
 		
-		Map<String, String> paths = PathTools.getPaths();
+		Map<String, String> paths = PathTools.getPaths(true);
 		String ep = paths.get("ENCODINGS_PATH");
 		String mp = paths.get("MIDI_PATH");
 		String td = "test";
@@ -37,11 +42,13 @@ public class TabMapperTest extends TestCase {
 		);
 	}
 
-	protected void tearDown() throws Exception {
-		super.tearDown();
+
+	@After
+	public void tearDown() throws Exception {
 	}
 
 
+	@Test
 	public void testFindClosestMultiple() {
 		Rational gridVal = new Rational(1, 96);
 		List<Rational> onsets = Arrays.asList(new Rational[]{
@@ -67,6 +74,7 @@ public class TabMapperTest extends TestCase {
 	}
 
 
+	@Test
 	public void testFindClosestPitchesAndVoices() {
 		Tablature tab = new Tablature(encodingTestpiece);
 		Transcription trans = new Transcription(midiTestpiece, encodingTestpiece);
@@ -139,6 +147,7 @@ public class TabMapperTest extends TestCase {
 	}
 
 
+	@Test
 	public void testRoundFraction() {
 		List<Rational> rats = Arrays.asList(new Rational[]{
 			new Rational(17, 4), // -1 gives 16/4 = 4/1
@@ -167,6 +176,7 @@ public class TabMapperTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetLastPitchInVoices() {
 		Transcription trans = new Transcription(midiTestpiece);
 		List<Integer> availableVoices = Arrays.asList(new Integer[]{0, 1, 4});
@@ -233,6 +243,7 @@ public class TabMapperTest extends TestCase {
 	}
 
 
+	@Test
 	public void testGetCheapestMapping() {
 		List<Integer[]> lastPitchInAvailableVoices = new ArrayList<>();
 		lastPitchInAvailableVoices.add(new Integer[]{3, 48});
