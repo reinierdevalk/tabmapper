@@ -180,12 +180,8 @@ public class TabMapper {
 		String inPathTab = PathTools.getPathString(Arrays.asList(tmp, TAB_DIR));
 		String inPathMIDI = PathTools.getPathString(Arrays.asList(tmp, MIDI_DIR));
 		String outPath = PathTools.getPathString(Arrays.asList(tmp, OUT_DIR));
-		String pp = PathTools.getPathString(
-			Arrays.asList(paths.get("CODE_PATH"), "utils", "py")
-		);
-		MEIExport.setPythonPath(pp);
-		String tp = paths.get("TEMPLATES_PATH");
-		MEIExport.setTemplatesPath(tp);
+		MEIExport.setPythonPath(PathTools.getPathString(Arrays.asList(paths.get("UTILS_PYTHON_PATH"))));
+		MEIExport.setTemplatesPath(paths.get("TEMPLATES_PATH"));
 
 		// Variables
 		Connection connection = Connection.RIGHT;
