@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -65,16 +64,16 @@ public class TabMapper {
 	private static final String TAB_DIR = "in/tab/";
 	private static final String MIDI_DIR = "in/MIDI/";
 	private static final String OUT_DIR = "out/";
-	
-	private static final List<String> ALLOWED_FILE_FORMATS = Arrays.asList(
-		Encoding.EXTENSION, 
-		TabImport.TC_EXT, 
-		MEIExport.MEI_EXT, 
-		MEIExport.MEI_EXT_ALT
-	);
 
 	private static final List<Integer> MAJOR = Arrays.asList(new Integer[]{0, 2, 4, 5, 7, 9, 11});
 	private static final List<Integer> MINOR = Arrays.asList(new Integer[]{0, 2, 3, 5, 7, 8, 10});
+	
+	public final static String ORNAMENTATION = "-o";
+	public final static String SCORE = "-s";
+	public final static String TABLATURE = "-t";
+	public final static String DURATION = "-d";
+	public final static String FILE = "-f";
+
 
 	// F major example
 	// F     G     A  Bb    C     D     E 
@@ -180,66 +179,55 @@ public class TabMapper {
 		String inPathTab = PathTools.getPathString(Arrays.asList(tmp, TAB_DIR));
 		String inPathMIDI = PathTools.getPathString(Arrays.asList(tmp, MIDI_DIR));
 		String outPath = PathTools.getPathString(Arrays.asList(tmp, OUT_DIR));
-		MEIExport.setPythonPath(PathTools.getPathString(Arrays.asList(paths.get("UTILS_PYTHON_PATH"))));
-		MEIExport.setTemplatesPath(paths.get("TEMPLATES_PATH"));
 
 		// Variables
 		Connection connection = Connection.RIGHT;
-		AtomicBoolean includeOrn = null;
-		AtomicBoolean showAsScore = null;
-		AtomicBoolean tabOnTop = null;
-		AtomicBoolean completeDurations = null;
-		List<String[]> pieces = new ArrayList<>();
+		boolean includeOrn;
+		boolean showAsScore;
+		boolean tabOnTop;
+		boolean completeDurations;
+		List<String[]> piecesArr = new ArrayList<>();
 		if (args.length > 0) {
-			args = args[0].split(",");
-
-			// Default abtab values
-			includeOrn = new AtomicBoolean(true);
-			showAsScore = new AtomicBoolean(false);
-			tabOnTop = new AtomicBoolean(false);
-			completeDurations = new AtomicBoolean(false);
-
-			// NB The same opts and vals must be used in abtab.sh
-			List<String> opts = Arrays.asList("-o", "-s", "-t", "-d", "-f");
-			List<String> trueVals = Arrays.asList("y", "y", "t", "y");
-			List<AtomicBoolean> optBools = Arrays.asList(
-				includeOrn, showAsScore, tabOnTop, completeDurations
+			// Parse CLI args and set variables
+			String[] opts = args[1].split(" ");
+			String[] defaultVals = args[2].split(" ");
+			String[] userOptsVals = !args[3].equals("") ? args[3].split(",") : new String[]{};
+			System.out.println(Arrays.asList(userOptsVals));
+			System.exit(0);
+			
+			List<Object> parsed = ToolBox.parseCLIArgs(
+				opts, defaultVals, userOptsVals, 
+				PathTools.getPathString(Arrays.asList(inPathTab)) 
 			);
+			Map<String, String> cliOptsVals = (Map<String, String>) parsed.get(0);
+			List<String> pieces = (List<String>) parsed.get(1);
 
-			// Parse options 
-			for (String s : args) {
-				String[] spl = s.trim().split(" ");
-				String opt = spl[0];
-				String val = spl[1];
-				if (opt.equals("-f")) {
-					String pieceNoExt = val.substring(0, val.lastIndexOf("."));
-					pieces.add(new String[]{pieceNoExt, pieceNoExt, null});
-				}
-				else {
-					int ind = opts.indexOf(opt);
-					String trueVal = trueVals.get(ind);
-					optBools.get(ind).set((val.equals(trueVal) ? true : false));
-				}
-			}
-			// If there is no -f option: add all pieces in in/ to pieces
-			if (!Arrays.stream(args).anyMatch(s -> s.startsWith("-f"))) {
-				List<String> inputFiles = readInputFolder(inPathTab, ALLOWED_FILE_FORMATS, false);
-				inputFiles.forEach(f -> pieces.add(new String[]{f, f, null}));
-			}
+			includeOrn = cliOptsVals.get(ORNAMENTATION).equals("y") ? true : false;
+			showAsScore = cliOptsVals.get(SCORE).equals("y") ? true : false;
+			tabOnTop = cliOptsVals.get(TABLATURE).equals("t") ? true : false;
+			completeDurations = cliOptsVals.get(DURATION).equals("y") ? true : false;
+			pieces.forEach(p -> piecesArr.add(new String[]{p, p, null}));
+
+//			for (Map.Entry<String, String> entry : cliOptsVals.entrySet()) {
+//				System.out.println(entry.getKey() + " -- " + entry.getValue());
+//			}
+//			pieces.forEach(s -> System.out.println(s));
 		}
 		else {
-			includeOrn = new AtomicBoolean(true);
-			showAsScore = new AtomicBoolean(false);
-			tabOnTop = new AtomicBoolean(false);
-			completeDurations = new AtomicBoolean(false);
-			List<String> inputFiles = readInputFolder(inPathTab, ALLOWED_FILE_FORMATS, false);
-			inputFiles.forEach(f -> pieces.add(new String[]{f, f, null}));
+			includeOrn = true;
+			showAsScore = false;
+			tabOnTop = false;
+			completeDurations = false;
+			List<String> inputFiles = ToolBox.readInputFolder(
+				inPathTab, TabImport.ALLOWED_FILE_FORMATS, false
+			);
+			inputFiles.forEach(f -> piecesArr.add(new String[]{f, f, null}));
 		}
 
 		// Map pieces; add to tables, store output files
 		StringBuffer table = new StringBuffer();
 		table.append(COLS.stream().collect(Collectors.joining("\t", "", "\r\n")));
-		String[][] latexTable = new String[pieces.size()+1][COLS.size()];
+		String[][] latexTable = new String[piecesArr.size()+1][COLS.size()];
 		List<Integer> intInds = IntStream.rangeClosed(1, COLS.indexOf(M) - 1)
 			.boxed()
 			.collect(Collectors.toList());
@@ -248,8 +236,8 @@ public class TabMapper {
 		Double[] doublesToAvg = new Double[COLS.size()];
 		Arrays.fill(doublesToAvg, 0.0);
 		List<String> uniqueOrns = new ArrayList<>();
-		for (int i = 0; i < pieces.size(); i++) {
-			String[] piece = pieces.get(i);
+		for (int i = 0; i < piecesArr.size(); i++) {
+			String[] piece = piecesArr.get(i);
 			String tabName = piece[0];
 			String modelName = piece[1];
 			String shortName = "[" + (i+1) + "]";
@@ -272,12 +260,12 @@ public class TabMapper {
 			Integer[][] bnp = model.getBasicNoteProperties();
 
 			// Map tab onto model and calculate results
-			List<Object> mapping = map(model, tab, includeOrn.get(), connection);
+			List<Object> mapping = map(model, tab, includeOrn, connection);
 			List<List<Double>> voiceLabels = (List<List<Double>>) mapping.get(0);
 			List<List<Integer>> mismatchInds = (List<List<Integer>>) mapping.get(1);
 			List<String> csv = (List<String>) mapping.get(2);
 			List<Object> results = getPieceResults(
-				btp, bnp, shortName, mismatchInds, includeOrn.get()
+				btp, bnp, shortName, mismatchInds, includeOrn
 			);
 			String tableRow = (String) results.get(0);
 			Integer[] ints = (Integer[]) results.get(1);
@@ -289,9 +277,9 @@ public class TabMapper {
 			csv.forEach(s -> csvSb.append(s + "\r\n"));
 			ToolBox.storeTextFile(csvSb.toString(), new File(outPath + tabName + "-mapping.csv"));
 			// b. MIDI (used to create a GT transcription for training a model) 
-			String fn = completeDurations.get() ? tabName + "-dur" : tabName;
+			String fn = completeDurations ? tabName + "-dur" : tabName;
 			File f = new File(outPath + fn + MIDIImport.EXTENSION);
-			if (!includeOrn.get()) {
+			if (!includeOrn) {
 				List<Integer> repInds = mismatchInds.get(Transcription.REPETITION_IND);
 				List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
 				List<Integer> ficInds = mismatchInds.get(Transcription.FICTA_IND);
@@ -339,7 +327,7 @@ public class TabMapper {
 				model.getScorePiece().getHarmonyTrack(), model.getNumberOfVoices(), 
 				model.getScorePiece().getName()
 			);
-			if (completeDurations.get()) {
+			if (completeDurations) {
 				p.completeDurations(Rational.HALF); // TODO OK for all meters?
 			}
 			MIDIExport.exportMidiFile(
@@ -349,12 +337,12 @@ public class TabMapper {
 			// c. MEI (used to visualise the mismatches)
 			Transcription trans = new Transcription(f);
 			MEIExport.exportMEIFile(
-				trans, tab, mismatchInds, showAsScore.get(), tabOnTop.get(),
+				trans, tab, mismatchInds, showAsScore, tabOnTop, paths,
 				new String[]{outPath + fn, "abtab -- tabmapper"}
 			);
 			// d. CSV with ornaments
 			List<String> csvOrn = null;
-			if (includeOrn.get()) {
+			if (includeOrn) {
 				csvOrn = getOrnaments(
 					tab, trans, mismatchInds.get(Transcription.ORNAMENTATION_IND)
 				);
@@ -381,7 +369,7 @@ public class TabMapper {
 				}
 			}
 			// d. uniqueOrns
-			if (includeOrn.get()) {
+			if (includeOrn) {
 				csvOrn.forEach(s -> { 
 					if (!s.startsWith("ornament") && !uniqueOrns.contains(s.substring(0, s.indexOf(",")))) { 
 						uniqueOrns.add(s.substring(0, s.indexOf(","))); 
@@ -393,10 +381,10 @@ public class TabMapper {
 		// Print
 		System.out.println();
 		System.out.println(
-			pieces.size() + (pieces.size() == 1 ? " piece (" : " pieces (") + 
+			piecesArr.size() + (piecesArr.size() == 1 ? " piece (" : " pieces (") + 
 			intsToAvg[COLS.indexOf(NUM_NOTES_INTAB)] + " notes) processed"
 		);
-		pieces.forEach(p -> System.out.println(p[2] + " " + p[0]));
+		piecesArr.forEach(p -> System.out.println(p[2] + " " + p[0]));
 		System.out.println();
 		System.out.println(table);
 
@@ -408,44 +396,6 @@ public class TabMapper {
 			latexTable, intsToAvg, doublesToAvg, intInds, 0, 5, true
 		);
 		ToolBox.storeTextFile(fullLatexTable, new File(outPath + "LaTeX.txt"));
-	}
-
-
-	/**
-	 * Gets, for the allowed formats given, the (unique) piece names. Any pieces not
-	 * in .tbp format are converted into it.
-	 * 
-	 * @param inPath
-	 * @param formats
-	 * @param inclExt
-	 * 
-	 * @return The list of unique pieces.
-	 */
-	public static List<String> readInputFolder(String inPath, List<String> formats, boolean inclExt) {
-		// Get unique piece names
-		List<String> piecenames = getFilenamesInFolder(inPath, formats, inclExt);
-
-		// Convert any non-.tbp into .tbp
-		for (String p : piecenames) {
-			if (!Files.exists(Paths.get(inPath + p + Encoding.EXTENSION))) {
-				// .tc file
-				if (Files.exists(Paths.get(inPath + p + TabImport.TC_EXT))) {
-					String s = TabImport.tc2tbp(
-						ToolBox.readTextFile(new File(inPath + p + TabImport.TC_EXT))
-					);
-					ToolBox.storeTextFile(s, new File(inPath + p + Encoding.EXTENSION));
-				}
-				// .xml file
-				else if (Files.exists(Paths.get(inPath + p + MEIExport.MEI_EXT))) {
-					// TODO luteconv .xml -> .tc; TabImport.tc2tbp()
-				}
-				// .mei file 
-				else if (Files.exists(Paths.get(inPath + p + MEIExport.MEI_EXT_ALT))) {
-					// TODO luteconv .mei -> .tc; TabImport.tc2tbp()
-				}
-			}
-		}
-		return piecenames;
 	}
 
 
@@ -494,41 +444,6 @@ public class TabMapper {
 		doubles[COLS.indexOf(P_O)] = po;
 
 		return Arrays.asList(new Object[]{results, ints, doubles});
-	}
-
-
-	/**
-	 * Gets, on the given path, the names of all pieces with an extension that is in 
-	 * the given list.
-	 * 
-	 * @param path
-	 * @param ext
-	 * @param includeEnc
-	 * @return
-	 */
-	public static List<String> getFilenamesInFolder(String path, List<String> ext, boolean includeEnc) {
-		List<String> pieces = new ArrayList<>();
-		try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(path))) {
-			for (Path entry : stream) {
-				if (Files.isRegularFile(entry)) {
-					String filename = entry.getFileName().toString();
-					String[] ne = ToolBox.splitExt(filename);
-					if (ext.contains(ne[1])) {
-						if (includeEnc) {
-							pieces.add(filename);
-						}
-						else {
-							if (!pieces.contains(ne[0])) {
-								pieces.add(ne[0]);
-							}
-						}
-					}
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return pieces;
 	}
 
 
