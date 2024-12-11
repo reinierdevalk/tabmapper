@@ -25,6 +25,7 @@ import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
 import external.Tablature;
 import external.Transcription;
+import interfaces.CLInterface;
 import internal.core.Encoding;
 import internal.core.ScorePiece;
 import internal.structure.ScoreMetricalTimeLine;
@@ -34,7 +35,6 @@ import tools.ToolBox;
 import tools.labels.LabelTools;
 import tools.music.PitchKeyTools;
 import tools.music.TimeMeterTools;
-import tools.path.PathTools;
 import tools.text.StringTools;
 
 public class TabMapper {
@@ -68,12 +68,6 @@ public class TabMapper {
 	private static final List<Integer> MAJOR = Arrays.asList(new Integer[]{0, 2, 4, 5, 7, 9, 11});
 	private static final List<Integer> MINOR = Arrays.asList(new Integer[]{0, 2, 3, 5, 7, 8, 10});
 	
-	public final static String ORNAMENTATION = "-o";
-	public final static String SCORE = "-s";
-	public final static String TABLATURE = "-t";
-	public final static String DURATION = "-d";
-	public final static String FILE = "-f";
-
 
 	// F major example
 	// F     G     A  Bb    C     D     E 
@@ -172,13 +166,13 @@ public class TabMapper {
 
 	public static void main(String[] args) {
 		boolean dev = args.length == 0 ? true : args[0].equals(String.valueOf(true));
-		Map<String, String> paths = PathTools.getPaths(dev);
+		Map<String, String> paths = CLInterface.getPaths(dev);
 
 		// Paths
 		String tmp = paths.get("TABMAPPER_PATH");
-		String inPathTab = PathTools.getPathString(Arrays.asList(tmp, TAB_DIR));
-		String inPathMIDI = PathTools.getPathString(Arrays.asList(tmp, MIDI_DIR));
-		String outPath = PathTools.getPathString(Arrays.asList(tmp, OUT_DIR));
+		String inPathTab = CLInterface.getPathString(Arrays.asList(tmp, TAB_DIR));
+		String inPathMIDI = CLInterface.getPathString(Arrays.asList(tmp, MIDI_DIR));
+		String outPath = CLInterface.getPathString(Arrays.asList(tmp, OUT_DIR));
 
 		// Variables
 		Connection connection = Connection.RIGHT;
@@ -186,26 +180,25 @@ public class TabMapper {
 		boolean showAsScore;
 		boolean tabOnTop;
 		boolean completeDurations;
+		Map<String, String> cliOptsVals = null;
 		List<String[]> piecesArr = new ArrayList<>();
 		if (args.length > 0) {
 			// Parse CLI args and set variables
 			String[] opts = args[1].split(" ");
 			String[] defaultVals = args[2].split(" ");
 			String[] userOptsVals = !args[3].equals("") ? args[3].split(",") : new String[]{};
-			System.out.println(Arrays.asList(userOptsVals));
-			System.exit(0);
-			
-			List<Object> parsed = ToolBox.parseCLIArgs(
-				opts, defaultVals, userOptsVals, 
-				PathTools.getPathString(Arrays.asList(inPathTab)) 
-			);
-			Map<String, String> cliOptsVals = (Map<String, String>) parsed.get(0);
-			List<String> pieces = (List<String>) parsed.get(1);
 
-			includeOrn = cliOptsVals.get(ORNAMENTATION).equals("y") ? true : false;
-			showAsScore = cliOptsVals.get(SCORE).equals("y") ? true : false;
-			tabOnTop = cliOptsVals.get(TABLATURE).equals("t") ? true : false;
-			completeDurations = cliOptsVals.get(DURATION).equals("y") ? true : false;
+			List<Object> parsed = CLInterface.parseCLIArgs(
+				opts, defaultVals, userOptsVals, 
+				CLInterface.getPathString(Arrays.asList(inPathTab)) 
+			);
+			cliOptsVals = (Map<String, String>) parsed.get(0);
+			List<String> pieces = (List<String>) parsed.get(1);
+			
+			includeOrn = cliOptsVals.get(CLInterface.ORNAMENTATION).equals("y") ? true : false;
+			showAsScore = cliOptsVals.get(CLInterface.SCORE).equals("y") ? true : false;
+			tabOnTop = cliOptsVals.get(CLInterface.TABLATURE_TM).equals("t") ? true : false;
+			completeDurations = cliOptsVals.get(CLInterface.DURATION).equals("y") ? true : false;
 			pieces.forEach(p -> piecesArr.add(new String[]{p, p, null}));
 
 //			for (Map.Entry<String, String> entry : cliOptsVals.entrySet()) {
@@ -218,10 +211,10 @@ public class TabMapper {
 			showAsScore = false;
 			tabOnTop = false;
 			completeDurations = false;
-			List<String> inputFiles = ToolBox.readInputFolder(
-				inPathTab, TabImport.ALLOWED_FILE_FORMATS, false
-			);
-			inputFiles.forEach(f -> piecesArr.add(new String[]{f, f, null}));
+//			List<String> inputFiles = CLInterface.readInputFolder(
+//				inPathTab, TabImport.ALLOWED_FILE_FORMATS, false
+//			);
+//			inputFiles.forEach(f -> piecesArr.add(new String[]{f, f, null}));
 		}
 
 		// Map pieces; add to tables, store output files
@@ -338,7 +331,7 @@ public class TabMapper {
 			Transcription trans = new Transcription(f);
 			MEIExport.exportMEIFile(
 				trans, tab, mismatchInds, showAsScore, tabOnTop, paths,
-				new String[]{outPath + fn, "abtab -- tabmapper"}
+				cliOptsVals, new String[]{outPath + fn, "abtab -- tabmapper"}
 			);
 			// d. CSV with ornaments
 			List<String> csvOrn = null;
@@ -925,7 +918,9 @@ public class TabMapper {
 							}
 
 							// Replace voiceLabels in currOrn
-							List<Double> vl = Transcription.createVoiceLabel(new Integer[]{closestVoice});
+							List<Double> vl = LabelTools.createVoiceLabel(
+								new Integer[]{closestVoice}, Transcription.MAX_NUM_VOICES
+							);
 							currOrn.forEach(ind -> voiceLabels.set(ind, vl));
 						}
 						// Add to list (also if includeOrnamentation == false)
@@ -1424,6 +1419,7 @@ public class TabMapper {
 		voiceLabelsCurrChord, List<Integer[]> keyInfo, Rational currOnset, Transcription trans,
 		List<Integer> prevPitches, List<List<Double>> prevVoiceLabels){
 
+		int mnv = Transcription.MAX_NUM_VOICES;
 		int numVoices = trans.getNumberOfVoices();
 		List<Integer> allVoices = 
 			IntStream.rangeClosed(0, numVoices-1).boxed().collect(Collectors.toList());
@@ -1701,7 +1697,7 @@ public class TabMapper {
 					}
 					voiceLabelsCurrChord.set(
 						pitchesTab.indexOf(currNonMappedSNUPitch), 
-						LabelTools.convertIntoVoiceLabel(Arrays.asList(new Integer[]{currNonMappedSNUVoice})));
+						LabelTools.convertIntoVoiceLabel(Arrays.asList(new Integer[]{currNonMappedSNUVoice}), mnv));
 //-*-					System.out.println("pitchesNotInMIDI        " + pitchesNotInMIDI + " (removal of non-mapped SNU)");
 //					System.out.println("pitchesNotInMIDIOrig    " + pitchesNotInMIDIOriginal + " (removal of non-mapped SNU)");
 //-*-					System.out.println("indPitchesNotInMIDI     " + indPitchesNotInMIDI + " (removal of non-mapped SNU)");
@@ -1805,8 +1801,9 @@ public class TabMapper {
 			for (Integer[] in : cheapestMapping) {
 				int pitch = in[1];
 				int voice = in[0];
-				List<Double> label = 
-					LabelTools.convertIntoVoiceLabel(Arrays.asList(new Integer[]{voice}));
+				List<Double> label = LabelTools.convertIntoVoiceLabel(
+					Arrays.asList(new Integer[]{voice}), mnv
+				);
 				// If unmapped unison (half-mapped unison (see above) is assumed not to happen)						
 				if (Collections.frequency(pitchesTab, pitch) == 2) {
 					// If first unison note has already been added: add only last unison note
@@ -2727,6 +2724,7 @@ public class TabMapper {
 		voiceLabelsCurrChord, List<Integer[]> keyInfo, Rational currOnset, Transcription trans,
 		List<Integer> prevPitches, List<List<Double>> prevVoiceLabels){
 
+		int mnv = Transcription.MAX_NUM_VOICES;
 		int numVoices = trans.getNumberOfVoices();
 		List<Integer> allVoices = 
 			IntStream.rangeClosed(0, numVoices-1).boxed().collect(Collectors.toList());
@@ -2911,7 +2909,7 @@ public class TabMapper {
 					}
 					voiceLabelsCurrChord.set(
 						pitchesTab.indexOf(currNonMappedSNUPitch), 
-						LabelTools.convertIntoVoiceLabel(Arrays.asList(new Integer[]{currNonMappedSNUVoice})));
+						LabelTools.convertIntoVoiceLabel(Arrays.asList(new Integer[]{currNonMappedSNUVoice}), mnv));
 //-*-					System.out.println("pitchesNotInMIDI        " + pitchesNotInMIDI + " (removal of non-mapped SNU)");
 //					System.out.println("pitchesNotInMIDIOrig    " + pitchesNotInMIDIOriginal + " (removal of non-mapped SNU)");
 //-*-					System.out.println("indPitchesNotInMIDI     " + indPitchesNotInMIDI + " (removal of non-mapped SNU)");
@@ -3078,8 +3076,9 @@ public class TabMapper {
 			for (Integer[] in : cheapestMapping) {
 				int pitch = in[1];
 				int voice = in[0];
-				List<Double> label = 
-					LabelTools.convertIntoVoiceLabel(Arrays.asList(new Integer[]{voice}));
+				List<Double> label = LabelTools.convertIntoVoiceLabel(
+					Arrays.asList(new Integer[]{voice}), mnv
+				);
 				// If unmapped unison (half-mapped unison (see above) is assumed not to happen)						
 				if (Collections.frequency(pitchesTab, pitch) == 2) {
 					// If first unison note has already been added: add only last unison note
