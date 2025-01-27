@@ -331,7 +331,7 @@ public class TabMapper {
 			Transcription trans = new Transcription(f);
 			MEIExport.exportMEIFile(
 				trans, tab, mismatchInds, showAsScore, tabOnTop, paths,
-				cliOptsVals, new String[]{outPath + fn, "abtab -- tabmapper"}
+				CLInterface.getTranscriptionParams(cliOptsVals), new String[]{outPath + fn, "abtab -- tabmapper"}
 			);
 			// d. CSV with ornaments
 			List<String> csvOrn = null;
