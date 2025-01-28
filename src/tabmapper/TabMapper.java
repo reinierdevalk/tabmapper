@@ -238,9 +238,9 @@ public class TabMapper {
 			System.out.println("... mapping " + shortName + " " + tabName + " ...");
 
 			// Make tab; make model transcription
-			Tablature tab = new Tablature(new File(inPathTab + tabName + Encoding.EXTENSION));
+			Tablature tab = new Tablature(new File(inPathTab + tabName + Encoding.TBP_EXT));
 			Transcription model = new Transcription(
-				tab.getMeterInfo(), new File(inPathMIDI + modelName + MIDIImport.EXTENSION)
+				tab.getMeterInfo(), new File(inPathMIDI + modelName + MIDIImport.MID_EXT)
 			);
 			// If necessary: adapt maximum number of voices 
 			if (model.getNumberOfVoices() == 6) {
@@ -271,7 +271,7 @@ public class TabMapper {
 			ToolBox.storeTextFile(csvSb.toString(), new File(outPath + tabName + "-mapping.csv"));
 			// b. MIDI (used to create a GT transcription for training a model) 
 			String fn = completeDurations ? tabName + "-dur" : tabName;
-			File f = new File(outPath + fn + MIDIImport.EXTENSION);
+			File f = new File(outPath + fn + MIDIImport.MID_EXT);
 			if (!includeOrn) {
 				List<Integer> repInds = mismatchInds.get(Transcription.REPETITION_IND);
 				List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
@@ -443,7 +443,7 @@ public class TabMapper {
 	private static List<String[]> getPieces(String p) {
 		List<String[]> pieces = new ArrayList<>();
 		String tcExt = TabImport.TC_EXT;
-		String tbpExt = Encoding.EXTENSION;
+		String tbpExt = Encoding.TBP_EXT;
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(p))) {
 //		try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(path + TAB_DIR))) {
 			for (Path entry : stream) {
