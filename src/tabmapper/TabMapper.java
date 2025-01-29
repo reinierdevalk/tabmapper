@@ -190,7 +190,7 @@ public class TabMapper {
 
 			List<Object> parsed = CLInterface.parseCLIArgs(
 				opts, defaultVals, userOptsVals, 
-				CLInterface.getPathString(Arrays.asList(inPathTab)) 
+				CLInterface.getPathString(Arrays.asList(inPathTab))
 			);
 			cliOptsVals = (Map<String, String>) parsed.get(0);
 			List<String> pieces = (List<String>) parsed.get(1);
