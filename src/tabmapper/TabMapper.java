@@ -184,13 +184,11 @@ public class TabMapper {
 		List<String[]> piecesArr = new ArrayList<>();
 		if (args.length > 0) {
 			// Parse CLI args and set variables
-			String[] opts = args[1].split(" ");
-			String[] defaultVals = args[2].split(" ");
-			String[] userOptsVals = !args[3].equals("") ? args[3].split(",") : new String[]{};
-
+//			String[] opts = args[1].split(" ");
+//			String[] defaultVals = args[2].split(" ");
+//			String[] userOptsVals = !args[3].equals("") ? args[3].split(",") : new String[]{};
 			List<Object> parsed = CLInterface.parseCLIArgs(
-				opts, defaultVals, userOptsVals, 
-				CLInterface.getPathString(Arrays.asList(inPathTab))
+				args, CLInterface.getPathString(Arrays.asList(inPathTab))
 			);
 			cliOptsVals = (Map<String, String>) parsed.get(0);
 			List<String> pieces = (List<String>) parsed.get(1);
@@ -330,7 +328,7 @@ public class TabMapper {
 			// c. MEI (used to visualise the mismatches)
 			Transcription trans = new Transcription(f);
 			MEIExport.exportMEIFile(
-				trans, tab, mismatchInds, showAsScore, tabOnTop, paths,
+				trans, tab, mismatchInds, !showAsScore, tabOnTop, paths,
 				CLInterface.getTranscriptionParams(cliOptsVals), new String[]{outPath + fn, "abtab -- tabmapper"}
 			);
 			// d. CSV with ornaments
