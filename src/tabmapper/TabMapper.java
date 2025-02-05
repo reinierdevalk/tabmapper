@@ -25,12 +25,14 @@ import de.uos.fmt.musitech.data.structure.Note;
 import de.uos.fmt.musitech.utility.math.Rational;
 import external.Tablature;
 import external.Transcription;
+import external.Tablature.Tuning;
 import interfaces.CLInterface;
 import internal.core.Encoding;
 import internal.core.ScorePiece;
 import internal.structure.ScoreMetricalTimeLine;
 import internal.structure.Timeline;
 import tbp.symbols.RhythmSymbol;
+import tbp.symbols.TabSymbol.TabSymbolSet;
 import tools.ToolBox;
 import tools.labels.LabelTools;
 import tools.music.PitchKeyTools;
@@ -177,26 +179,24 @@ public class TabMapper {
 		// Variables
 		Connection connection = Connection.RIGHT;
 		boolean includeOrn;
-		boolean showAsScore;
-		boolean tabOnTop;
 		boolean completeDurations;
+//		boolean showAsScore;
+//		boolean tabOnTop;
+		
 		Map<String, String> cliOptsVals = null;
 		List<String[]> piecesArr = new ArrayList<>();
 		if (args.length > 0) {
 			// Parse CLI args and set variables
-//			String[] opts = args[1].split(" ");
-//			String[] defaultVals = args[2].split(" ");
-//			String[] userOptsVals = !args[3].equals("") ? args[3].split(",") : new String[]{};
 			List<Object> parsed = CLInterface.parseCLIArgs(
 				args, CLInterface.getPathString(Arrays.asList(inPathTab))
 			);
 			cliOptsVals = (Map<String, String>) parsed.get(0);
 			List<String> pieces = (List<String>) parsed.get(1);
-			
+
 			includeOrn = cliOptsVals.get(CLInterface.ORNAMENTATION).equals("y") ? true : false;
-			showAsScore = cliOptsVals.get(CLInterface.SCORE).equals("y") ? true : false;
-			tabOnTop = cliOptsVals.get(CLInterface.TABLATURE_TM).equals("t") ? true : false;
 			completeDurations = cliOptsVals.get(CLInterface.DURATION).equals("y") ? true : false;
+//			showAsScore = cliOptsVals.get(CLInterface.SCORE).equals("y") ? true : false;
+//			tabOnTop = cliOptsVals.get(CLInterface.PLACEMENT).equals("t") ? true : false;			
 			pieces.forEach(p -> piecesArr.add(new String[]{p, p, null}));
 
 //			for (Map.Entry<String, String> entry : cliOptsVals.entrySet()) {
@@ -206,8 +206,8 @@ public class TabMapper {
 		}
 		else {
 			includeOrn = true;
-			showAsScore = false;
-			tabOnTop = false;
+//			showAsScore = false;
+//			tabOnTop = false;
 			completeDurations = false;
 //			List<String> inputFiles = CLInterface.readInputFolder(
 //				inPathTab, TabImport.ALLOWED_FILE_FORMATS, false
@@ -326,10 +326,17 @@ public class TabMapper {
 				model.getKeyInfo(), f.getAbsolutePath()
 			);
 			// c. MEI (used to visualise the mismatches)
+			cliOptsVals = CLInterface.setPieceSpecificTransParams(cliOptsVals, tab, "tabmapper");
+//			Tuning[] tunings = tab.getTunings();
+//			TabSymbolSet tss = tab.getEncoding().getTabSymbolSet();		
+//			cliOptsVals.put(CLInterface.TUNING, tunings[Tablature.ENCODED_TUNING_IND].getName()); // is always INPUT
+//			if (cliOptsVals.get(CLInterface.TYPE).equals(CLInterface.INPUT)) {
+//				cliOptsVals.put(CLInterface.TYPE, tss.getShortType());
+//			}
 			Transcription trans = new Transcription(f);
 			MEIExport.exportMEIFile(
-				trans, tab, mismatchInds, !showAsScore, tabOnTop, paths,
-				CLInterface.getTranscriptionParams(cliOptsVals), new String[]{outPath + fn, "abtab -- tabmapper"}
+				trans, tab, mismatchInds, CLInterface.getTranscriptionParams(cliOptsVals), 
+				paths, new String[]{outPath + fn, "abtab -- tabmapper"}
 			);
 			// d. CSV with ornaments
 			List<String> csvOrn = null;
