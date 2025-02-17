@@ -17,6 +17,7 @@ import external.Tablature;
 import external.Transcription;
 import interfaces.CLInterface;
 import tools.ToolBox;
+import tools.text.StringTools;
 
 public class TabMapperTest {
 
@@ -34,10 +35,10 @@ public class TabMapperTest {
 		String mp = paths.get("MIDI_PATH");
 		String td = "test/5vv/";
 
-		encodingTestpiece = new File(CLInterface.getPathString(
+		encodingTestpiece = new File(StringTools.getPathString(
 			Arrays.asList(ep, td)) + "testpiece.tbp"
 		);
-		midiTestpiece = new File(CLInterface.getPathString(
+		midiTestpiece = new File(StringTools.getPathString(
 			Arrays.asList(mp, td)) + "testpiece.mid"
 		);
 	}

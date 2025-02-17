@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,6 +30,7 @@ import external.Tablature.Tuning;
 import interfaces.CLInterface;
 import internal.core.Encoding;
 import internal.core.ScorePiece;
+import internal.core.Encoding.Stage;
 import internal.structure.ScoreMetricalTimeLine;
 import internal.structure.Timeline;
 import tbp.symbols.RhythmSymbol;
@@ -167,53 +169,45 @@ public class TabMapper {
 
 
 	public static void main(String[] args) {
-		boolean dev = args.length == 0 ? true : args[0].equals(String.valueOf(true));
+		boolean dev = args.length == 0 ? true : args[CLInterface.DEV_IND].equals(String.valueOf(true));
 		Map<String, String> paths = CLInterface.getPaths(dev);
 
 		// Paths
 		String tmp = paths.get("TABMAPPER_PATH");
-		String inPathTab = CLInterface.getPathString(Arrays.asList(tmp, TAB_DIR));
-		String inPathMIDI = CLInterface.getPathString(Arrays.asList(tmp, MIDI_DIR));
-		String outPath = CLInterface.getPathString(Arrays.asList(tmp, OUT_DIR));
+		String inPathTab = StringTools.getPathString(Arrays.asList(tmp, TAB_DIR));
+		String inPathMIDI = StringTools.getPathString(Arrays.asList(tmp, MIDI_DIR));
+		String outPath = StringTools.getPathString(Arrays.asList(tmp, OUT_DIR));
 
 		// Variables
 		Connection connection = Connection.RIGHT;
 		boolean includeOrn;
 		boolean completeDurations;
-//		boolean showAsScore;
-//		boolean tabOnTop;
-		
+
 		Map<String, String> cliOptsVals = null;
 		List<String[]> piecesArr = new ArrayList<>();
 		if (args.length > 0) {
 			// Parse CLI args and set variables
 			List<Object> parsed = CLInterface.parseCLIArgs(
-				args, CLInterface.getPathString(Arrays.asList(inPathTab))
+				args, StringTools.getPathString(Arrays.asList(inPathTab))
 			);
 			cliOptsVals = (Map<String, String>) parsed.get(0);
 			List<String> pieces = (List<String>) parsed.get(1);
 
 			includeOrn = cliOptsVals.get(CLInterface.ORNAMENTATION).equals("y") ? true : false;
 			completeDurations = cliOptsVals.get(CLInterface.DURATION).equals("y") ? true : false;
-//			showAsScore = cliOptsVals.get(CLInterface.SCORE).equals("y") ? true : false;
-//			tabOnTop = cliOptsVals.get(CLInterface.PLACEMENT).equals("t") ? true : false;			
-			pieces.forEach(p -> piecesArr.add(new String[]{p, p, null}));
-
-//			for (Map.Entry<String, String> entry : cliOptsVals.entrySet()) {
-//				System.out.println(entry.getKey() + " -- " + entry.getValue());
-//			}
-//			pieces.forEach(s -> System.out.println(s));
+			pieces.forEach(p -> piecesArr.add(
+				new String[]{p, ToolBox.splitExt(p)[0] + MIDIImport.MID_EXT, null}
+			));
 		}
 		else {
 			includeOrn = true;
-//			showAsScore = false;
-//			tabOnTop = false;
 			completeDurations = false;
 //			List<String> inputFiles = CLInterface.readInputFolder(
 //				inPathTab, TabImport.ALLOWED_FILE_FORMATS, false
 //			);
 //			inputFiles.forEach(f -> piecesArr.add(new String[]{f, f, null}));
 		}
+		List<String> piecesNoExt = StringTools.removeExtensions(ToolBox.getItemsAtIndex(piecesArr, 0));
 
 		// Map pieces; add to tables, store output files
 		StringBuffer table = new StringBuffer();
@@ -228,17 +222,27 @@ public class TabMapper {
 		Arrays.fill(doublesToAvg, 0.0);
 		List<String> uniqueOrns = new ArrayList<>();
 		for (int i = 0; i < piecesArr.size(); i++) {
+			// Make local copy of cliOptsVals so that INPUT values do not get overwritten when this 
+			// method is called in a loop
+			Map<String, String> cliOptsValsLocal = new LinkedHashMap<>(cliOptsVals);
+			
 			String[] piece = piecesArr.get(i);
-			String tabName = piece[0];
+			String tabName = piece[0]; // name of piece, w/ extension. needed for convertToTbp() and ExportMEIFile() (2nd arg) 
+			String tabNameNoExt = ToolBox.splitExt(tabName)[0]; // name of piece, w/o extension. needed for Encoding (only setting name)
+			String storeName = // needed for all files that are stored (.mei, .mid, .csv, .csv); gets an extension
+				Collections.frequency(piecesNoExt, tabNameNoExt) > 1 ? tabName : tabNameNoExt; 
 			String modelName = piece[1];
 			String shortName = "[" + (i+1) + "]";
 			piece[2] = shortName;
 			System.out.println("... mapping " + shortName + " " + tabName + " ...");
 
 			// Make tab; make model transcription
-			Tablature tab = new Tablature(new File(inPathTab + tabName + Encoding.TBP_EXT));
+			String rawEncoding = TabImport.convertToTbp(inPathTab, tabName);
+			Encoding e = new Encoding(rawEncoding, tabNameNoExt, Stage.RULES_CHECKED);
+			Tablature tab = new Tablature(e, false);
+//			Tablature tab = new Tablature(new File(inPathTab + tabName + Encoding.TBP_EXT));
 			Transcription model = new Transcription(
-				tab.getMeterInfo(), new File(inPathMIDI + modelName + MIDIImport.MID_EXT)
+				tab.getMeterInfo(), new File(inPathMIDI + modelName)
 			);
 			// If necessary: adapt maximum number of voices 
 			if (model.getNumberOfVoices() == 6) {
@@ -266,10 +270,8 @@ public class TabMapper {
 			// a. CSV with mapping statistics
 			StringBuffer csvSb = new StringBuffer();
 			csv.forEach(s -> csvSb.append(s + "\r\n"));
-			ToolBox.storeTextFile(csvSb.toString(), new File(outPath + tabName + "-mapping.csv"));
-			// b. MIDI (used to create a GT transcription for training a model) 
-			String fn = completeDurations ? tabName + "-dur" : tabName;
-			File f = new File(outPath + fn + MIDIImport.MID_EXT);
+			ToolBox.storeTextFile(csvSb.toString(), new File(outPath + storeName + "-mapping.csv"));
+			// b. MIDI (used to create a GT transcription for training a model)
 			if (!includeOrn) {
 				List<Integer> repInds = mismatchInds.get(Transcription.REPETITION_IND);
 				List<Integer> ornInds = mismatchInds.get(Transcription.ORNAMENTATION_IND);
@@ -321,22 +323,21 @@ public class TabMapper {
 			if (completeDurations) {
 				p.completeDurations(Rational.HALF); // TODO OK for all meters?
 			}
+			File f = new File(outPath + (completeDurations ? storeName + "-dur" : storeName) + MIDIImport.MID_EXT);
 			MIDIExport.exportMidiFile(
 				p, Arrays.asList(new Integer[]{MIDIExport.GUITAR}), model.getMeterInfo(), 
 				model.getKeyInfo(), f.getAbsolutePath()
 			);
 			// c. MEI (used to visualise the mismatches)
-			cliOptsVals = CLInterface.setPieceSpecificTransParams(cliOptsVals, tab, "tabmapper");
-//			Tuning[] tunings = tab.getTunings();
-//			TabSymbolSet tss = tab.getEncoding().getTabSymbolSet();		
-//			cliOptsVals.put(CLInterface.TUNING, tunings[Tablature.ENCODED_TUNING_IND].getName()); // is always INPUT
-//			if (cliOptsVals.get(CLInterface.TYPE).equals(CLInterface.INPUT)) {
-//				cliOptsVals.put(CLInterface.TYPE, tss.getShortType());
-//			}
+			cliOptsValsLocal = CLInterface.setPieceSpecificTransParams(cliOptsValsLocal, tab, "tabmapper");
 			Transcription trans = new Transcription(f);
 			MEIExport.exportMEIFile(
-				trans, tab, mismatchInds, CLInterface.getTranscriptionParams(cliOptsVals), 
-				paths, new String[]{outPath + fn, "abtab -- tabmapper"}
+				trans, tab, mismatchInds, CLInterface.getTranscriptionParams(cliOptsValsLocal), 
+				paths, new String[]{
+					outPath + (completeDurations ? storeName + "-dur" : storeName) + MEIExport.MEI_EXT, 
+					tabName, 
+					"abtab -- tabmapper"
+				}
 			);
 			// d. CSV with ornaments
 			List<String> csvOrn = null;
@@ -346,7 +347,7 @@ public class TabMapper {
 				);
 				StringBuffer csvOrnSb = new StringBuffer();
 				csvOrn.forEach(s -> csvOrnSb.append(s + "\r\n"));
-				ToolBox.storeTextFile(csvOrnSb.toString(), new File(outPath + tabName + "-ornaments.csv"));
+				ToolBox.storeTextFile(csvOrnSb.toString(), new File(outPath + storeName + "-ornaments.csv"));
 			}
 
 			// Update
