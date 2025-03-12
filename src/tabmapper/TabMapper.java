@@ -223,7 +223,7 @@ public class TabMapper {
 		List<String> uniqueOrns = new ArrayList<>();
 		for (int i = 0; i < piecesArr.size(); i++) {
 			// Make local copy of cliOptsVals so that INPUT values do not get overwritten when this 
-			// method is called in a loop
+			// method is called in a loop 
 			Map<String, String> cliOptsValsLocal = new LinkedHashMap<>(cliOptsVals);
 			
 			String[] piece = piecesArr.get(i);
