@@ -1,5 +1,0 @@
-# Ensure that files have LF (and not CRLF) line endings
-* .txt	eol=lf
-* .sh	eol=lf
-* .cfg	eol=lf
-* .md	eol=lf
