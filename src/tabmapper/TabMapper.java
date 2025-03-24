@@ -237,7 +237,7 @@ public class TabMapper {
 			System.out.println("... mapping " + shortName + " " + tabName + " ...");
 
 			// Make tab; make model transcription
-			String rawEncoding = TabImport.convertToTbp(inPathTab, tabName);
+			String rawEncoding = TabImport.convertToTbp(inPathTab, tabName, paths);
 			Encoding e = new Encoding(rawEncoding, tabNameNoExt, Stage.RULES_CHECKED);
 			Tablature tab = new Tablature(e, false);
 //			Tablature tab = new Tablature(new File(inPathTab + tabName + Encoding.TBP_EXT));
@@ -459,7 +459,7 @@ public class TabMapper {
 					String filenameTbp = ne[0] + tbpExt;
 					// Create .tbp file (if necessary)  
 					if (filename.endsWith(tcExt) && !Files.exists(Paths.get(p + filenameTbp))) {
-						String tbp = TabImport.tc2tbp(ToolBox.readTextFile(new File(entry.toString())));
+						String tbp = null; //TabImport.tc2tbp(new File(entry.toString()));
 						ToolBox.storeTextFile(tbp, new File(p + filenameTbp));
 					}
 					pieces.add(new String[]{ne[0], ne[0]});
