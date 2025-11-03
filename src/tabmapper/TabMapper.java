@@ -659,7 +659,7 @@ public class TabMapper {
 					String[] pa = (String[]) PitchKeyTools.spellPitch(
 						currPitch, currKi[Transcription.KI_KEY], PitchKeyTools.createGrids(
 							currKi[Transcription.KI_KEY], currKi[Transcription.KI_MODE]
-						), null).get(0);
+						), null, -1).get(0);
 				}
 			}
 			csv.add(String.join(" ", currEnc) + "," + String.join(",", currLoc));
@@ -1263,7 +1263,7 @@ public class TabMapper {
 
 		for (int i = 0; i < pitchesTab.size(); i++) {
 			int pitchInTab = pitchesTab.get(i);
-			String[] paTab = (String[]) PitchKeyTools.spellPitch(pitchInTab, keySig, grids, null).get(0);
+			String[] paTab = (String[]) PitchKeyTools.spellPitch(pitchInTab, keySig, grids, null, -1).get(0);
 			String pNameTab = paTab[0];
 			int octTab = PitchKeyTools.getOctave(pitchInTab);
 			int pitchInd = indicesTab.get(i);
@@ -1285,7 +1285,7 @@ public class TabMapper {
 			for (int j = 0; j < pitchesGT.size(); j++) {
 				if (pitchesGT.get(j) != null) {
 					int pitchInGT = pitchesGT.get(j);
-					String[] paGT = (String[]) PitchKeyTools.spellPitch(pitchInGT, keySig, grids, null).get(0);
+					String[] paGT = (String[]) PitchKeyTools.spellPitch(pitchInGT, keySig, grids, null, -1).get(0);
 					String pNameGT = paGT[0];
 					int octGT = PitchKeyTools.getOctave(pitchInGT);
 					boolean isFicta = (pitchInGT != pitchInTab && (pNameGT.equals(pNameTab) && octGT == octTab));
