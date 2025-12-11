@@ -172,7 +172,7 @@ public class TabMapper {
 	public static void main(String[] args) {
 		boolean dev = args.length == 0 ? true : args[CLInterface.DEV_IND].equals(String.valueOf(true));
 		Map<String, String> paths = CLInterface.getPaths(dev);
-		PythonInterface.setPython(dev, paths.get("CODE_PATH"));
+		PythonInterface.setPython(dev, paths.get("VENV_PATH"));
 
 		// Paths
 		String tmp = paths.get("TABMAPPER_PATH");
