@@ -243,7 +243,8 @@ public class TabMapper {
 			String tabName = piece[0]; // name of piece, w/ extension. needed for convertToTbp() and ExportMEIFile() (2nd arg) 
 			String tabNameNoExt = ToolBox.splitExt(tabName)[0]; // name of piece, w/o extension. needed for Encoding (only setting name)
 			String storeName = // needed for all files that are stored (.mei, .mid, .csv, .csv); gets an extension
-				Collections.frequency(piecesNoExt, tabNameNoExt) > 1 ? tabName : tabNameNoExt; 
+				Collections.frequency(piecesNoExt, tabNameNoExt) > 1 ? tabName : tabNameNoExt;
+			storeName += completeDurations ? "-dur" : "";
 			String modelName = piece[1];
 			String shortName = "[" + (i+1) + "]";
 			piece[2] = shortName;
@@ -337,7 +338,8 @@ public class TabMapper {
 			if (completeDurations) {
 				p.completeDurations(Rational.HALF); // TODO OK for all meters?
 			}
-			File f = new File(outPath + (completeDurations ? storeName + "-dur" : storeName) + MIDIImport.MID_EXT);
+			File f = new File(outPath + storeName + MIDIImport.MID_EXT);
+//			File f = new File(outPath + (completeDurations ? storeName + "-dur" : storeName) + MIDIImport.MID_EXT);
 			MIDIExport.exportMidiFile(
 				p, Arrays.asList(new Integer[]{MIDIExport.GUITAR}), model.getMeterInfo(), 
 				model.getKeyInfo(), f.getAbsolutePath()
@@ -348,8 +350,10 @@ public class TabMapper {
 			MEIExport.exportMEIFile(
 				trans, tab, mismatchInds, CLInterface.getTranscriptionParams(cliOptsValsLocal), 
 				paths, new String[]{
-					outPath + (completeDurations ? storeName + "-dur" : storeName) + MEIExport.MEI_EXT, 
-					tabName, 
+					outPath + storeName + MEIExport.MEI_EXT, 
+//					outPath + (completeDurations ? storeName + "-dur" : storeName) + MEIExport.MEI_EXT, 
+					tabName,
+					storeName + MEIExport.MEI_EXT,
 					"abtab -- tabmapper"
 				}
 			);
